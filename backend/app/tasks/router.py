@@ -71,28 +71,18 @@ def read_tasks(
     Retrieve tasks.
     """
 
-    if current_user.is_superuser:
-        count_statement = select(func.count()).select_from(Task)
-        count = session.exec(count_statement).one()
-        statement = (
-            select(Task).order_by(col(Task.created_at).desc()).offset(skip).limit(limit)
-        )
-        tasks = session.exec(statement).all()
-    else:
-        count_statement = (
-            select(func.count())
-            .select_from(Task)
-            .where(Task.owner_id == current_user.id)
-        )
-        count = session.exec(count_statement).one()
-        statement = (
-            select(Task)
-            .where(Task.owner_id == current_user.id)
-            .order_by(col(Task.created_at).desc())
-            .offset(skip)
-            .limit(limit)
-        )
-        tasks = session.exec(statement).all()
+    count_statement = (
+        select(func.count()).select_from(Task).where(Task.owner_id == current_user.id)
+    )
+    count = session.exec(count_statement).one()
+    statement = (
+        select(Task)
+        .where(Task.owner_id == current_user.id)
+        .order_by(col(Task.created_at).desc())
+        .offset(skip)
+        .limit(limit)
+    )
+    tasks = session.exec(statement).all()
 
     # reportArgumentType - Arguements are automatically converted.
     return TasksPublic(data=tasks, count=count)  # pyright: ignore[reportArgumentType]
@@ -109,10 +99,10 @@ def read_all_completions(
     Retrieve all task completions for the current user.
     """
     base = (
-        select(TaskCompletion).join(Task, TaskCompletion.task_id == Task.id)  # type: ignore[arg-type]
+        select(TaskCompletion)
+        .join(Task, TaskCompletion.task_id == Task.id)  # type: ignore[arg-type]
+        .where(Task.owner_id == current_user.id)
     )
-    if not current_user.is_superuser:
-        base = base.where(Task.owner_id == current_user.id)
 
     count = session.exec(
         select(func.count()).select_from(base.subquery()),
@@ -158,7 +148,7 @@ def delete_completion(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task not found",
         )
-    if not current_user.is_superuser and task.owner_id != current_user.id:
+    if task.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions",
@@ -191,7 +181,7 @@ def update_completion(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task not found",
         )
-    if not current_user.is_superuser and task.owner_id != current_user.id:
+    if task.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions",
@@ -218,7 +208,7 @@ def read_task(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task not found",
         )
-    if not current_user.is_superuser and (task.owner_id != current_user.id):
+    if task.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions",
@@ -269,7 +259,7 @@ def update_task(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task not found",
         )
-    if not current_user.is_superuser and (task.owner_id != current_user.id):
+    if task.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions",
@@ -299,7 +289,7 @@ def complete_task(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task not found",
         )
-    if not current_user.is_superuser and (task.owner_id != current_user.id):
+    if task.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions",
@@ -340,7 +330,7 @@ def read_task_completions(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task not found",
         )
-    if not current_user.is_superuser and (task.owner_id != current_user.id):
+    if task.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions",
@@ -368,7 +358,7 @@ def delete_task(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task not found",
         )
-    if not current_user.is_superuser and (task.owner_id != current_user.id):
+    if task.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions",

@@ -226,31 +226,6 @@ export const NewPasswordSchema = {
     title: 'NewPassword'
 } as const;
 
-export const PrivateUserCreateSchema = {
-    properties: {
-        email: {
-            type: 'string',
-            title: 'Email'
-        },
-        password: {
-            type: 'string',
-            title: 'Password'
-        },
-        full_name: {
-            type: 'string',
-            title: 'Full Name'
-        },
-        is_verified: {
-            type: 'boolean',
-            title: 'Is Verified',
-            default: false
-        }
-    },
-    type: 'object',
-    required: ['email', 'password', 'full_name'],
-    title: 'PrivateUserCreate'
-} as const;
-
 export const RepeatTypeSchema = {
     type: 'string',
     enum: ['none', 'on_completion', 'on_due_date'],
@@ -731,48 +706,6 @@ export const UpdatePasswordSchema = {
     title: 'UpdatePassword'
 } as const;
 
-export const UserCreateSchema = {
-    properties: {
-        email: {
-            type: 'string',
-            maxLength: 255,
-            format: 'email',
-            title: 'Email'
-        },
-        is_active: {
-            type: 'boolean',
-            title: 'Is Active',
-            default: true
-        },
-        is_superuser: {
-            type: 'boolean',
-            title: 'Is Superuser',
-            default: false
-        },
-        full_name: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 255
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Full Name'
-        },
-        password: {
-            type: 'string',
-            maxLength: 128,
-            minLength: 8,
-            title: 'Password'
-        }
-    },
-    type: 'object',
-    required: ['email', 'password'],
-    title: 'UserCreate'
-} as const;
-
 export const UserPublicSchema = {
     properties: {
         email: {
@@ -785,11 +718,6 @@ export const UserPublicSchema = {
             type: 'boolean',
             title: 'Is Active',
             default: true
-        },
-        is_superuser: {
-            type: 'boolean',
-            title: 'Is Superuser',
-            default: false
         },
         full_name: {
             anyOf: [
@@ -858,61 +786,6 @@ export const UserRegisterSchema = {
     title: 'UserRegister'
 } as const;
 
-export const UserUpdateSchema = {
-    properties: {
-        email: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 255,
-                    format: 'email'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Email'
-        },
-        is_active: {
-            type: 'boolean',
-            title: 'Is Active',
-            default: true
-        },
-        is_superuser: {
-            type: 'boolean',
-            title: 'Is Superuser',
-            default: false
-        },
-        full_name: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 255
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Full Name'
-        },
-        password: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 128,
-                    minLength: 8
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Password'
-        }
-    },
-    type: 'object',
-    title: 'UserUpdate'
-} as const;
-
 export const UserUpdateMeSchema = {
     properties: {
         full_name: {
@@ -943,25 +816,6 @@ export const UserUpdateMeSchema = {
     },
     type: 'object',
     title: 'UserUpdateMe'
-} as const;
-
-export const UsersPublicSchema = {
-    properties: {
-        data: {
-            items: {
-                '$ref': '#/components/schemas/UserPublic'
-            },
-            type: 'array',
-            title: 'Data'
-        },
-        count: {
-            type: 'integer',
-            title: 'Count'
-        }
-    },
-    type: 'object',
-    required: ['data', 'count'],
-    title: 'UsersPublic'
 } as const;
 
 export const ValidationErrorSchema = {

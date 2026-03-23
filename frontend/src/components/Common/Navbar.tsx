@@ -6,7 +6,6 @@ import {
   LogOut,
   Menu,
   Settings,
-  Users,
   X,
 } from "lucide-react"
 import { useState } from "react"
@@ -39,9 +38,7 @@ export function Navbar() {
   const currentPath = router.location.pathname
   const [mobileOpen, setMobileOpen] = useState(false)
 
-  const allItems = currentUser?.is_superuser
-    ? [...navItems, { icon: Users, title: "Admin", path: "/admin" }]
-    : navItems
+  const allItems = navItems
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

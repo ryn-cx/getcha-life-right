@@ -12,12 +12,12 @@ from tests.utils.task import create_random_task
 
 def test_create_task(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
 ) -> None:
     data = {"title": "Foo", "description": "Fighters"}
     response = client.post(
         f"{settings.API_V1_STR}/tasks/",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
         json=data,
     )
     assert response.status_code == status.HTTP_200_OK
@@ -31,12 +31,12 @@ def test_create_task(
 
 def test_create_task_without_category(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
 ) -> None:
     data = {"title": "Foo", "description": "Bar"}
     response = client.post(
         f"{settings.API_V1_STR}/tasks/",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
         json=data,
     )
     assert response.status_code == status.HTTP_200_OK
@@ -48,13 +48,13 @@ def test_create_task_without_category(
 
 def test_create_task_with_category(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
 ) -> None:
-    # Create a category owned by the superuser
+    # Create a category
     category_data = {"title": "Work"}
     category_response = client.post(
         f"{settings.API_V1_STR}/categories/",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
         json=category_data,
     )
     assert category_response.status_code == status.HTTP_200_OK
@@ -63,7 +63,7 @@ def test_create_task_with_category(
     data = {"title": "Foo", "description": "Bar", "category_id": category_id}
     response = client.post(
         f"{settings.API_V1_STR}/tasks/",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
         json=data,
     )
     assert response.status_code == status.HTTP_200_OK
@@ -74,7 +74,7 @@ def test_create_task_with_category(
 
 def test_create_task_with_nonexistent_category(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
 ) -> None:
     data = {
         "title": "Foo",
@@ -83,7 +83,7 @@ def test_create_task_with_nonexistent_category(
     }
     response = client.post(
         f"{settings.API_V1_STR}/tasks/",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
         json=data,
     )
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
@@ -93,7 +93,7 @@ def test_create_task_with_nonexistent_category(
 
 def test_create_task_with_other_users_category(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
     db: Session,
 ) -> None:
     # Create a category owned by a different user
@@ -105,7 +105,7 @@ def test_create_task_with_other_users_category(
     }
     response = client.post(
         f"{settings.API_V1_STR}/tasks/",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
         json=data,
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -115,29 +115,32 @@ def test_create_task_with_other_users_category(
 
 def test_read_task(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
-    db: Session,
+    user_token_headers: dict[str, str],
 ) -> None:
-    task = create_random_task(db)
+    create_response = client.post(
+        f"{settings.API_V1_STR}/tasks/",
+        headers=user_token_headers,
+        json={"title": "Read me", "description": "Test desc"},
+    )
+    task_id = create_response.json()["id"]
     response = client.get(
-        f"{settings.API_V1_STR}/tasks/{task.id}",
-        headers=superuser_token_headers,
+        f"{settings.API_V1_STR}/tasks/{task_id}",
+        headers=user_token_headers,
     )
     assert response.status_code == status.HTTP_200_OK
     content = response.json()
-    assert content["title"] == task.title
-    assert content["description"] == task.description
-    assert content["id"] == str(task.id)
-    assert content["owner_id"] == str(task.owner_id)
+    assert content["title"] == "Read me"
+    assert content["description"] == "Test desc"
+    assert content["id"] == task_id
 
 
 def test_read_task_not_found(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
 ) -> None:
     response = client.get(
         f"{settings.API_V1_STR}/tasks/{uuid.uuid4()}",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
     )
     assert response.status_code == status.HTTP_404_NOT_FOUND
     content = response.json()
@@ -146,13 +149,13 @@ def test_read_task_not_found(
 
 def test_read_task_not_enough_permissions(
     client: TestClient,
-    normal_user_token_headers: dict[str, str],
+    other_user_token_headers: dict[str, str],
     db: Session,
 ) -> None:
     task = create_random_task(db)
     response = client.get(
         f"{settings.API_V1_STR}/tasks/{task.id}",
-        headers=normal_user_token_headers,
+        headers=other_user_token_headers,
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
     content = response.json()
@@ -161,49 +164,58 @@ def test_read_task_not_enough_permissions(
 
 def test_read_tasks(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
-    db: Session,
+    user_token_headers: dict[str, str],
 ) -> None:
-    create_random_task(db)
-    create_random_task(db)
+    client.post(
+        f"{settings.API_V1_STR}/tasks/",
+        headers=user_token_headers,
+        json={"title": "Task A"},
+    )
+    client.post(
+        f"{settings.API_V1_STR}/tasks/",
+        headers=user_token_headers,
+        json={"title": "Task B"},
+    )
     response = client.get(
         f"{settings.API_V1_STR}/tasks/",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
     )
     assert response.status_code == status.HTTP_200_OK
     content = response.json()
-    expected_number_of_tasks = 2
-    assert len(content["data"]) >= expected_number_of_tasks
+    assert len(content["data"]) >= 2  # noqa: PLR2004
 
 
 def test_update_task(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
-    db: Session,
+    user_token_headers: dict[str, str],
 ) -> None:
-    task = create_random_task(db)
+    create_response = client.post(
+        f"{settings.API_V1_STR}/tasks/",
+        headers=user_token_headers,
+        json={"title": "Original"},
+    )
+    task_id = create_response.json()["id"]
     data = {"title": "Updated title", "description": "Updated description"}
     response = client.put(
-        f"{settings.API_V1_STR}/tasks/{task.id}",
-        headers=superuser_token_headers,
+        f"{settings.API_V1_STR}/tasks/{task_id}",
+        headers=user_token_headers,
         json=data,
     )
     assert response.status_code == status.HTTP_200_OK
     content = response.json()
     assert content["title"] == data["title"]
     assert content["description"] == data["description"]
-    assert content["id"] == str(task.id)
-    assert content["owner_id"] == str(task.owner_id)
+    assert content["id"] == task_id
 
 
 def test_update_task_set_category(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
 ) -> None:
     task_data = {"title": "Foo"}
     task_response = client.post(
         f"{settings.API_V1_STR}/tasks/",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
         json=task_data,
     )
     assert task_response.status_code == status.HTTP_200_OK
@@ -212,7 +224,7 @@ def test_update_task_set_category(
     category_data = {"title": "Work"}
     category_response = client.post(
         f"{settings.API_V1_STR}/categories/",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
         json=category_data,
     )
     assert category_response.status_code == status.HTTP_200_OK
@@ -221,7 +233,7 @@ def test_update_task_set_category(
     update_data = {"category_id": category_id}
     response = client.put(
         f"{settings.API_V1_STR}/tasks/{task_id}",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
         json=update_data,
     )
     assert response.status_code == status.HTTP_200_OK
@@ -231,13 +243,13 @@ def test_update_task_set_category(
 
 def test_update_task_with_other_users_category(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
     db: Session,
 ) -> None:
     task_data = {"title": "Foo"}
     task_response = client.post(
         f"{settings.API_V1_STR}/tasks/",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
         json=task_data,
     )
     assert task_response.status_code == status.HTTP_200_OK
@@ -247,7 +259,7 @@ def test_update_task_with_other_users_category(
     update_data = {"category_id": str(category.id)}
     response = client.put(
         f"{settings.API_V1_STR}/tasks/{task_id}",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
         json=update_data,
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -257,12 +269,12 @@ def test_update_task_with_other_users_category(
 
 def test_update_task_remove_category(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
 ) -> None:
     category_data = {"title": "Work"}
     category_response = client.post(
         f"{settings.API_V1_STR}/categories/",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
         json=category_data,
     )
     category_id = category_response.json()["id"]
@@ -270,7 +282,7 @@ def test_update_task_remove_category(
     task_data = {"title": "Foo", "category_id": category_id}
     task_response = client.post(
         f"{settings.API_V1_STR}/tasks/",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
         json=task_data,
     )
     task_id = task_response.json()["id"]
@@ -278,7 +290,7 @@ def test_update_task_remove_category(
     update_data = {"category_id": None}
     response = client.put(
         f"{settings.API_V1_STR}/tasks/{task_id}",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
         json=update_data,
     )
     assert response.status_code == status.HTTP_200_OK
@@ -288,12 +300,12 @@ def test_update_task_remove_category(
 
 def test_update_task_not_found(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
 ) -> None:
     data = {"title": "Updated title", "description": "Updated description"}
     response = client.put(
         f"{settings.API_V1_STR}/tasks/{uuid.uuid4()}",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
         json=data,
     )
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -303,14 +315,14 @@ def test_update_task_not_found(
 
 def test_update_task_not_enough_permissions(
     client: TestClient,
-    normal_user_token_headers: dict[str, str],
+    other_user_token_headers: dict[str, str],
     db: Session,
 ) -> None:
     task = create_random_task(db)
     data = {"title": "Updated title", "description": "Updated description"}
     response = client.put(
         f"{settings.API_V1_STR}/tasks/{task.id}",
-        headers=normal_user_token_headers,
+        headers=other_user_token_headers,
         json=data,
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -320,13 +332,17 @@ def test_update_task_not_enough_permissions(
 
 def test_delete_task(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
-    db: Session,
+    user_token_headers: dict[str, str],
 ) -> None:
-    task = create_random_task(db)
+    create_response = client.post(
+        f"{settings.API_V1_STR}/tasks/",
+        headers=user_token_headers,
+        json={"title": "Delete me"},
+    )
+    task_id = create_response.json()["id"]
     response = client.delete(
-        f"{settings.API_V1_STR}/tasks/{task.id}",
-        headers=superuser_token_headers,
+        f"{settings.API_V1_STR}/tasks/{task_id}",
+        headers=user_token_headers,
     )
     assert response.status_code == status.HTTP_200_OK
     content = response.json()
@@ -335,11 +351,11 @@ def test_delete_task(
 
 def test_delete_task_not_found(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
 ) -> None:
     response = client.delete(
         f"{settings.API_V1_STR}/tasks/{uuid.uuid4()}",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
     )
     assert response.status_code == status.HTTP_404_NOT_FOUND
     content = response.json()
@@ -348,13 +364,13 @@ def test_delete_task_not_found(
 
 def test_delete_task_not_enough_permissions(
     client: TestClient,
-    normal_user_token_headers: dict[str, str],
+    other_user_token_headers: dict[str, str],
     db: Session,
 ) -> None:
     task = create_random_task(db)
     response = client.delete(
         f"{settings.API_V1_STR}/tasks/{task.id}",
-        headers=normal_user_token_headers,
+        headers=other_user_token_headers,
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
     content = response.json()
@@ -363,12 +379,12 @@ def test_delete_task_not_enough_permissions(
 
 def test_complete_task_no_repeat(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
 ) -> None:
     data = {"title": "One-off task"}
     create_response = client.post(
         f"{settings.API_V1_STR}/tasks/",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
         json=data,
     )
     task_id = create_response.json()["id"]
@@ -376,21 +392,21 @@ def test_complete_task_no_repeat(
 
     response = client.post(
         f"{settings.API_V1_STR}/tasks/{task_id}/complete",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
     )
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["completed"] is True
 
     get_response = client.get(
         f"{settings.API_V1_STR}/tasks/{task_id}",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
     )
     assert get_response.status_code == status.HTTP_200_OK
     assert get_response.json()["completed"] is True
 
     completion_response = client.get(
         f"{settings.API_V1_STR}/tasks/{task_id}/completions",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
     )
     assert completion_response.status_code == status.HTTP_200_OK
     completions = completion_response.json()
@@ -400,7 +416,7 @@ def test_complete_task_no_repeat(
 
 def test_complete_task_repeat_on_due_date(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
 ) -> None:
     """Completing a task with ON_DUE_DATE repeat should advance dates from due_date."""
     data = {
@@ -412,7 +428,7 @@ def test_complete_task_repeat_on_due_date(
     }
     create_response = client.post(
         f"{settings.API_V1_STR}/tasks/",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
         json=data,
     )
     assert create_response.status_code == status.HTTP_200_OK
@@ -420,7 +436,7 @@ def test_complete_task_repeat_on_due_date(
 
     response = client.post(
         f"{settings.API_V1_STR}/tasks/{task_id}/complete",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
     )
     assert response.status_code == status.HTTP_200_OK
     content = response.json()
@@ -444,7 +460,7 @@ def test_complete_task_repeat_on_due_date(
 
     completion_response = client.get(
         f"{settings.API_V1_STR}/tasks/{task_id}/completions",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
     )
     assert completion_response.status_code == status.HTTP_200_OK
     completions = completion_response.json()
@@ -454,7 +470,7 @@ def test_complete_task_repeat_on_due_date(
 
 def test_complete_task_repeat_on_completion(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
 ) -> None:
     data = {
         "title": "Repeating task",
@@ -465,14 +481,14 @@ def test_complete_task_repeat_on_completion(
     }
     create_response = client.post(
         f"{settings.API_V1_STR}/tasks/",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
         json=data,
     )
     task_id = create_response.json()["id"]
 
     response = client.post(
         f"{settings.API_V1_STR}/tasks/{task_id}/complete",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
     )
     assert response.status_code == status.HTTP_200_OK
     content = response.json()
@@ -486,7 +502,7 @@ def test_complete_task_repeat_on_completion(
 
     completion_response = client.get(
         f"{settings.API_V1_STR}/tasks/{task_id}/completions",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
     )
     assert completion_response.status_code == status.HTTP_200_OK
     completions = completion_response.json()
@@ -496,7 +512,7 @@ def test_complete_task_repeat_on_completion(
 
 def test_complete_task_monthly_day_clamping_and_restoration(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
 ) -> None:
     data = {
         "title": "Monthly on 31st",
@@ -507,17 +523,15 @@ def test_complete_task_monthly_day_clamping_and_restoration(
     }
     create_response = client.post(
         f"{settings.API_V1_STR}/tasks/",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
         json=data,
     )
     assert create_response.status_code == status.HTTP_200_OK
     task_id = create_response.json()["id"]
-    content = create_response.json()
-    assert content["repeat_original_due_day"] == 31  # noqa: PLR2004
 
     response_1 = client.post(
         f"{settings.API_V1_STR}/tasks/{task_id}/complete",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
     )
     assert response_1.status_code == status.HTTP_200_OK
     content_1 = response_1.json()
@@ -537,11 +551,10 @@ def test_complete_task_monthly_day_clamping_and_restoration(
         0,
         tzinfo=timezone.utc,
     )
-    assert content_1["repeat_original_due_day"] == 31  # noqa: PLR2004
 
     response_2 = client.post(
         f"{settings.API_V1_STR}/tasks/{task_id}/complete",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
     )
     assert response_2.status_code == status.HTTP_200_OK
     content_2 = response_2.json()
@@ -565,7 +578,7 @@ def test_complete_task_monthly_day_clamping_and_restoration(
 
 def test_complete_task_yearly_leap_day(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
 ) -> None:
     data = {
         "title": "Yearly on leap day",
@@ -575,16 +588,15 @@ def test_complete_task_yearly_leap_day(
     }
     create_response = client.post(
         f"{settings.API_V1_STR}/tasks/",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
         json=data,
     )
     assert create_response.status_code == status.HTTP_200_OK
     task_id = create_response.json()["id"]
-    assert create_response.json()["repeat_original_due_day"] == 29  # noqa: PLR2004
 
     response_1 = client.post(
         f"{settings.API_V1_STR}/tasks/{task_id}/complete",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
     )
     assert datetime.fromisoformat(response_1.json()["due_date"]) == datetime(
         2029,
@@ -597,7 +609,7 @@ def test_complete_task_yearly_leap_day(
 
     response_2 = client.post(
         f"{settings.API_V1_STR}/tasks/{task_id}/complete",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
     )
     assert datetime.fromisoformat(response_2.json()["due_date"]) == datetime(
         2030,
@@ -610,7 +622,7 @@ def test_complete_task_yearly_leap_day(
 
     response_3 = client.post(
         f"{settings.API_V1_STR}/tasks/{task_id}/complete",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
     )
     assert datetime.fromisoformat(response_3.json()["due_date"]) == datetime(
         2031,
@@ -623,7 +635,7 @@ def test_complete_task_yearly_leap_day(
 
     response_4 = client.post(
         f"{settings.API_V1_STR}/tasks/{task_id}/complete",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
     )
     assert datetime.fromisoformat(response_4.json()["due_date"]) == datetime(
         2032,
@@ -637,7 +649,7 @@ def test_complete_task_yearly_leap_day(
 
 def test_complete_task_month_plus_day_overflow(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
 ) -> None:
     data = {
         "title": "Monthly + daily",
@@ -648,7 +660,7 @@ def test_complete_task_month_plus_day_overflow(
     }
     create_response = client.post(
         f"{settings.API_V1_STR}/tasks/",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
         json=data,
     )
     assert create_response.status_code == status.HTTP_200_OK
@@ -657,7 +669,7 @@ def test_complete_task_month_plus_day_overflow(
     # Complete: Jan 31 + 1 month (→ Feb 28) + 1 day → Mar 1
     response_1 = client.post(
         f"{settings.API_V1_STR}/tasks/{task_id}/complete",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
     )
     assert response_1.status_code == status.HTTP_200_OK
     assert datetime.fromisoformat(response_1.json()["due_date"]) == datetime(
@@ -672,7 +684,7 @@ def test_complete_task_month_plus_day_overflow(
     # Complete: Mar 1 + 1 month (→ Apr 1) + 1 day → Apr 2
     response_2 = client.post(
         f"{settings.API_V1_STR}/tasks/{task_id}/complete",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
     )
     assert datetime.fromisoformat(response_2.json()["due_date"]) == datetime(
         2026,
@@ -709,13 +721,13 @@ def _create_completion(
 
 def test_read_all_completions(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
 ) -> None:
-    _create_completion(client, superuser_token_headers)
+    _create_completion(client, user_token_headers)
 
     response = client.get(
         f"{settings.API_V1_STR}/tasks/completions/all",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
     )
     assert response.status_code == status.HTTP_200_OK
     content = response.json()
@@ -728,30 +740,30 @@ def test_read_all_completions(
 
 def test_read_all_completions_not_enough_permissions(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
-    normal_user_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
+    other_user_token_headers: dict[str, str],
 ) -> None:
-    _create_completion(client, superuser_token_headers)
+    _create_completion(client, user_token_headers)
 
     response = client.get(
         f"{settings.API_V1_STR}/tasks/completions/all",
-        headers=normal_user_token_headers,
+        headers=other_user_token_headers,
     )
     assert response.status_code == status.HTTP_200_OK
-    # Normal user should not see superuser's completions
+    # Other user should not see this user's completions
     for completion in response.json()["data"]:
         assert completion["task_title"] != "Task for completion"
 
 
 def test_delete_completion(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
 ) -> None:
-    task_id, completion_id = _create_completion(client, superuser_token_headers)
+    task_id, completion_id = _create_completion(client, user_token_headers)
 
     response = client.delete(
         f"{settings.API_V1_STR}/tasks/completions/{completion_id}",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
     )
     assert response.status_code == status.HTTP_200_OK
     assert response.json()["message"] == "Completion deleted successfully"
@@ -759,7 +771,7 @@ def test_delete_completion(
     # Verify it's gone
     completions_response = client.get(
         f"{settings.API_V1_STR}/tasks/{task_id}/completions",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
     )
     assert completions_response.status_code == status.HTTP_200_OK
     completion_ids = [c["id"] for c in completions_response.json()]
@@ -768,11 +780,11 @@ def test_delete_completion(
 
 def test_delete_completion_not_found(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
 ) -> None:
     response = client.delete(
         f"{settings.API_V1_STR}/tasks/completions/{uuid.uuid4()}",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
     )
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json()["detail"] == "Completion not found"
@@ -780,14 +792,14 @@ def test_delete_completion_not_found(
 
 def test_delete_completion_not_enough_permissions(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
-    normal_user_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
+    other_user_token_headers: dict[str, str],
 ) -> None:
-    _, completion_id = _create_completion(client, superuser_token_headers)
+    _, completion_id = _create_completion(client, user_token_headers)
 
     response = client.delete(
         f"{settings.API_V1_STR}/tasks/completions/{completion_id}",
-        headers=normal_user_token_headers,
+        headers=other_user_token_headers,
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN
     assert response.json()["detail"] == "Not enough permissions"
@@ -795,14 +807,14 @@ def test_delete_completion_not_enough_permissions(
 
 def test_update_completion(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
 ) -> None:
-    _, completion_id = _create_completion(client, superuser_token_headers)
+    _, completion_id = _create_completion(client, user_token_headers)
 
     new_time = "2026-01-15T10:30:00Z"
     response = client.put(
         f"{settings.API_V1_STR}/tasks/completions/{completion_id}",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
         json={"completed_at": new_time},
     )
     assert response.status_code == status.HTTP_200_OK
@@ -818,11 +830,11 @@ def test_update_completion(
 
 def test_update_completion_not_found(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
 ) -> None:
     response = client.put(
         f"{settings.API_V1_STR}/tasks/completions/{uuid.uuid4()}",
-        headers=superuser_token_headers,
+        headers=user_token_headers,
         json={"completed_at": "2026-01-15T10:30:00Z"},
     )
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -831,14 +843,14 @@ def test_update_completion_not_found(
 
 def test_update_completion_not_enough_permissions(
     client: TestClient,
-    superuser_token_headers: dict[str, str],
-    normal_user_token_headers: dict[str, str],
+    user_token_headers: dict[str, str],
+    other_user_token_headers: dict[str, str],
 ) -> None:
-    _, completion_id = _create_completion(client, superuser_token_headers)
+    _, completion_id = _create_completion(client, user_token_headers)
 
     response = client.put(
         f"{settings.API_V1_STR}/tasks/completions/{completion_id}",
-        headers=normal_user_token_headers,
+        headers=other_user_token_headers,
         json={"completed_at": "2026-01-15T10:30:00Z"},
     )
     assert response.status_code == status.HTTP_403_FORBIDDEN

@@ -2,8 +2,7 @@ import random
 import string
 
 from fastapi.testclient import TestClient
-
-from app.config import settings
+from sqlmodel import Session
 
 
 def random_lower_string() -> str:
@@ -15,12 +14,11 @@ def random_email() -> str:
     return f"{random_lower_string()}@{random_lower_string()}.com"
 
 
-def get_superuser_token_headers(client: TestClient) -> dict[str, str]:
-    login_data = {
-        "username": settings.FIRST_SUPERUSER,
-        "password": settings.FIRST_SUPERUSER_PASSWORD,
-    }
-    r = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data)
-    tokens = r.json()
-    a_token = tokens["access_token"]
-    return {"Authorization": f"Bearer {a_token}"}
+def get_user_token_headers(client: TestClient, db: Session) -> dict[str, str]:
+    from tests.utils.user import authentication_token_from_email  # noqa: PLC0415
+
+    return authentication_token_from_email(
+        client=client,
+        email="test-primary@example.com",
+        db=db,
+    )

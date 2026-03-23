@@ -1,81 +1,19 @@
-import uuid
+from fastapi import APIRouter, HTTPException, status
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlmodel import col, delete, func, select
-
-from app.auth.dependencies import (
-    CurrentUser,
-    SessionDep,
-    get_current_active_superuser,
-)
+from app.auth.dependencies import CurrentUser, SessionDep
 from app.auth.schemas import UpdatePassword
 from app.auth.security import get_password_hash, verify_password
-from app.categories.models import Category
-from app.config import settings
 from app.models import Message
-from app.tasks.models import Task
 from app.users import service as user_service
 from app.users.models import User
 from app.users.schemas import (
     UserCreate,
     UserPublic,
     UserRegister,
-    UsersPublic,
-    UserUpdate,
     UserUpdateMe,
 )
-from app.utils import service as email_service
 
 router = APIRouter(prefix="/users", tags=["users"])
-
-
-@router.get("/", dependencies=[Depends(get_current_active_superuser)])
-def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> UsersPublic:
-    """
-    Retrieve users.
-    """
-
-    count_statement = select(func.count()).select_from(User)
-    count = session.exec(count_statement).one()
-
-    statement = (
-        select(User).order_by(col(User.created_at).desc()).offset(skip).limit(limit)
-    )
-    users = session.exec(statement).all()
-
-    # reportArgumentType - Arguements are automatically converted.
-    return UsersPublic(data=users, count=count)  # pyright: ignore[reportArgumentType]
-
-
-@router.post(
-    "/",
-    dependencies=[Depends(get_current_active_superuser)],
-    response_model=UserPublic,
-)
-def create_user(*, session: SessionDep, user_in: UserCreate) -> User:
-    """
-    Create new user.
-    """
-    user = user_service.get_user_by_email(session=session, email=user_in.email)
-    if user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="The user with this email already exists in the system.",
-        )
-
-    user = user_service.create_user(session=session, user_create=user_in)
-    if settings.emails_enabled and user_in.email:
-        email_data = email_service.generate_new_account_email(
-            email_to=user_in.email,
-            username=user_in.email,
-            password=user_in.password,
-        )
-        email_service.send_email(
-            email_to=user_in.email,
-            subject=email_data.subject,
-            html_content=email_data.html_content,
-        )
-    return user
 
 
 @router.patch("/me", response_model=UserPublic)
@@ -88,7 +26,6 @@ def update_user_me(
     """
     Update own user.
     """
-
     if user_in.email:
         existing_user = user_service.get_user_by_email(
             session=session,
@@ -148,11 +85,6 @@ def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Message:
     """
     Delete own user.
     """
-    if current_user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Super users are not allowed to delete themselves",
-        )
     session.delete(current_user)
     session.commit()
     return Message(message="User deleted successfully")
@@ -171,96 +103,3 @@ def register_user(session: SessionDep, user_in: UserRegister) -> User:
         )
     user_create = UserCreate.model_validate(user_in)
     return user_service.create_user(session=session, user_create=user_create)
-
-
-@router.get("/{user_id}", response_model=UserPublic)
-def read_user_by_id(
-    user_id: uuid.UUID,
-    session: SessionDep,
-    current_user: CurrentUser,
-) -> User | None:
-    """
-    Get a specific user by id.
-    """
-    user = session.get(User, user_id)
-    if user == current_user:
-        return user
-    if not current_user.is_superuser:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="The user doesn't have enough privileges",
-        )
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
-        )
-    return user
-
-
-@router.patch(
-    "/{user_id}",
-    dependencies=[Depends(get_current_active_superuser)],
-    response_model=UserPublic,
-)
-def update_user(
-    *,
-    session: SessionDep,
-    user_id: uuid.UUID,
-    user_in: UserUpdate,
-) -> User | None:
-    """
-    Update a user.
-    """
-
-    db_user = session.get(User, user_id)
-    if not db_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="The user with this id does not exist in the system",
-        )
-    if user_in.email:
-        existing_user = user_service.get_user_by_email(
-            session=session,
-            email=user_in.email,
-        )
-        if existing_user and existing_user.id != user_id:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="User with this email already exists",
-            )
-
-    return user_service.update_user(
-        session=session,
-        db_user=db_user,
-        user_in=user_in,
-    )
-
-
-@router.delete("/{user_id}", dependencies=[Depends(get_current_active_superuser)])
-def delete_user(
-    session: SessionDep,
-    current_user: CurrentUser,
-    user_id: uuid.UUID,
-) -> Message:
-    """
-    Delete a user.
-    """
-    user = session.get(User, user_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
-        )
-    if user == current_user:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Super users are not allowed to delete themselves",
-        )
-    statement = delete(Task).where(col(Task.owner_id) == user_id)
-    session.exec(statement)
-    statement = delete(Category).where(col(Category.owner_id) == user_id)
-    session.exec(statement)
-    session.delete(user)
-    session.commit()
-    return Message(message="User deleted successfully")

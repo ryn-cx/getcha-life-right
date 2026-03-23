@@ -26,34 +26,22 @@ def read_categories(
     """
     Retrieve categories.
     """
+    count_statement = (
+        select(func.count())
+        .select_from(Category)
+        .where(Category.owner_id == current_user.id)
+    )
+    count = session.exec(count_statement).one()
+    statement = (
+        select(Category)
+        .where(Category.owner_id == current_user.id)
+        .order_by(col(Category.created_at).desc())
+        .offset(skip)
+        .limit(limit)
+    )
+    categories = session.exec(statement).all()
 
-    if current_user.is_superuser:
-        count_statement = select(func.count()).select_from(Category)
-        count = session.exec(count_statement).one()
-        statement = (
-            select(Category)
-            .order_by(col(Category.created_at).desc())
-            .offset(skip)
-            .limit(limit)
-        )
-        categories = session.exec(statement).all()
-    else:
-        count_statement = (
-            select(func.count())
-            .select_from(Category)
-            .where(Category.owner_id == current_user.id)
-        )
-        count = session.exec(count_statement).one()
-        statement = (
-            select(Category)
-            .where(Category.owner_id == current_user.id)
-            .order_by(col(Category.created_at).desc())
-            .offset(skip)
-            .limit(limit)
-        )
-        categories = session.exec(statement).all()
-
-    # reportArgumentType - Arguements are automatically converted.
+    # reportArgumentType - Arguments are automatically converted.
     return CategoriesPublic(data=categories, count=count)  # pyright: ignore[reportArgumentType]
 
 
@@ -72,7 +60,7 @@ def read_category(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Category not found",
         )
-    if not current_user.is_superuser and (category.owner_id != current_user.id):
+    if category.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions",
@@ -117,7 +105,7 @@ def update_category(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Category not found",
         )
-    if not current_user.is_superuser and (category.owner_id != current_user.id):
+    if category.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions",
@@ -145,7 +133,7 @@ def delete_category(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Category not found",
         )
-    if not current_user.is_superuser and (category.owner_id != current_user.id):
+    if category.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions",
