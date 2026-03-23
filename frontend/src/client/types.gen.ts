@@ -9,16 +9,17 @@ export type Body_login_login_access_token = {
     client_secret?: (string | null);
 };
 
-export type HTTPValidationError = {
-    detail?: Array<ValidationError>;
+export type CategoriesPublic = {
+    data: Array<CategoryPublic>;
+    count: number;
 };
 
-export type ItemCreate = {
+export type CategoryCreate = {
     title: string;
     description?: (string | null);
 };
 
-export type ItemPublic = {
+export type CategoryPublic = {
     title: string;
     description?: (string | null);
     id: string;
@@ -26,14 +27,13 @@ export type ItemPublic = {
     created_at?: (string | null);
 };
 
-export type ItemsPublic = {
-    data: Array<ItemPublic>;
-    count: number;
-};
-
-export type ItemUpdate = {
+export type CategoryUpdate = {
     title?: (string | null);
     description?: (string | null);
+};
+
+export type HTTPValidationError = {
+    detail?: Array<ValidationError>;
 };
 
 export type Message = {
@@ -45,11 +45,85 @@ export type NewPassword = {
     new_password: string;
 };
 
-export type PrivateUserCreate = {
-    email: string;
-    password: string;
-    full_name: string;
-    is_verified?: boolean;
+export type RepeatType = 'none' | 'on_completion' | 'on_due_date';
+
+export type TaskCompletionPublic = {
+    id: string;
+    task_id: string;
+    completed_at: string;
+};
+
+export type TaskCompletionsPublic = {
+    data: Array<TaskCompletionWithTask>;
+    count: number;
+};
+
+export type TaskCompletionUpdate = {
+    completed_at: string;
+};
+
+export type TaskCompletionWithTask = {
+    id: string;
+    task_id: string;
+    completed_at: string;
+    task_title: string;
+};
+
+export type TaskCreate = {
+    title: string;
+    description?: (string | null);
+    category_id?: (string | null);
+    start_date?: (string | null);
+    due_date?: (string | null);
+    repeat_type?: RepeatType;
+    repeat_seconds?: number;
+    repeat_minutes?: number;
+    repeat_hours?: number;
+    repeat_days?: number;
+    repeat_weeks?: number;
+    repeat_months?: number;
+    repeat_years?: number;
+};
+
+export type TaskPublic = {
+    title: string;
+    description?: (string | null);
+    category_id?: (string | null);
+    start_date?: (string | null);
+    due_date?: (string | null);
+    repeat_type?: RepeatType;
+    repeat_seconds?: number;
+    repeat_minutes?: number;
+    repeat_hours?: number;
+    repeat_days?: number;
+    repeat_weeks?: number;
+    repeat_months?: number;
+    repeat_years?: number;
+    id: string;
+    owner_id: string;
+    completed?: boolean;
+    created_at?: (string | null);
+};
+
+export type TasksPublic = {
+    data: Array<TaskPublic>;
+    count: number;
+};
+
+export type TaskUpdate = {
+    title?: (string | null);
+    description?: (string | null);
+    category_id?: (string | null);
+    start_date?: (string | null);
+    due_date?: (string | null);
+    repeat_type?: RepeatType;
+    repeat_seconds?: number;
+    repeat_minutes?: number;
+    repeat_hours?: number;
+    repeat_days?: number;
+    repeat_weeks?: number;
+    repeat_months?: number;
+    repeat_years?: number;
 };
 
 export type Token = {
@@ -62,18 +136,9 @@ export type UpdatePassword = {
     new_password: string;
 };
 
-export type UserCreate = {
-    email: string;
-    is_active?: boolean;
-    is_superuser?: boolean;
-    full_name?: (string | null);
-    password: string;
-};
-
 export type UserPublic = {
     email: string;
     is_active?: boolean;
-    is_superuser?: boolean;
     full_name?: (string | null);
     id: string;
     created_at?: (string | null);
@@ -83,19 +148,6 @@ export type UserRegister = {
     email: string;
     password: string;
     full_name?: (string | null);
-};
-
-export type UsersPublic = {
-    data: Array<UserPublic>;
-    count: number;
-};
-
-export type UserUpdate = {
-    email?: (string | null);
-    is_active?: boolean;
-    is_superuser?: boolean;
-    full_name?: (string | null);
-    password?: (string | null);
 };
 
 export type UserUpdateMe = {
@@ -113,37 +165,37 @@ export type ValidationError = {
     };
 };
 
-export type ItemsReadItemsData = {
+export type CategoriesReadCategoriesData = {
     limit?: number;
     skip?: number;
 };
 
-export type ItemsReadItemsResponse = (ItemsPublic);
+export type CategoriesReadCategoriesResponse = (CategoriesPublic);
 
-export type ItemsCreateItemData = {
-    requestBody: ItemCreate;
+export type CategoriesCreateCategoryData = {
+    requestBody: CategoryCreate;
 };
 
-export type ItemsCreateItemResponse = (ItemPublic);
+export type CategoriesCreateCategoryResponse = (CategoryPublic);
 
-export type ItemsReadItemData = {
-    itemId: string;
+export type CategoriesReadCategoryData = {
+    categoryId: string;
 };
 
-export type ItemsReadItemResponse = (ItemPublic);
+export type CategoriesReadCategoryResponse = (CategoryPublic);
 
-export type ItemsUpdateItemData = {
-    itemId: string;
-    requestBody: ItemUpdate;
+export type CategoriesUpdateCategoryData = {
+    categoryId: string;
+    requestBody: CategoryUpdate;
 };
 
-export type ItemsUpdateItemResponse = (ItemPublic);
+export type CategoriesUpdateCategoryResponse = (CategoryPublic);
 
-export type ItemsDeleteItemData = {
-    itemId: string;
+export type CategoriesDeleteCategoryData = {
+    categoryId: string;
 };
 
-export type ItemsDeleteItemResponse = (Message);
+export type CategoriesDeleteCategoryResponse = (Message);
 
 export type LoginLoginAccessTokenData = {
     formData: Body_login_login_access_token;
@@ -171,24 +223,69 @@ export type LoginRecoverPasswordHtmlContentData = {
 
 export type LoginRecoverPasswordHtmlContentResponse = (string);
 
-export type PrivateCreateUserData = {
-    requestBody: PrivateUserCreate;
-};
-
-export type PrivateCreateUserResponse = (UserPublic);
-
-export type UsersReadUsersData = {
+export type TasksReadTasksData = {
     limit?: number;
     skip?: number;
 };
 
-export type UsersReadUsersResponse = (UsersPublic);
+export type TasksReadTasksResponse = (TasksPublic);
 
-export type UsersCreateUserData = {
-    requestBody: UserCreate;
+export type TasksCreateTaskData = {
+    requestBody: TaskCreate;
 };
 
-export type UsersCreateUserResponse = (UserPublic);
+export type TasksCreateTaskResponse = (TaskPublic);
+
+export type TasksReadAllCompletionsData = {
+    limit?: number;
+    skip?: number;
+};
+
+export type TasksReadAllCompletionsResponse = (TaskCompletionsPublic);
+
+export type TasksDeleteCompletionData = {
+    completionId: string;
+};
+
+export type TasksDeleteCompletionResponse = (Message);
+
+export type TasksUpdateCompletionData = {
+    completionId: string;
+    requestBody: TaskCompletionUpdate;
+};
+
+export type TasksUpdateCompletionResponse = (TaskCompletionPublic);
+
+export type TasksReadTaskData = {
+    taskId: string;
+};
+
+export type TasksReadTaskResponse = (TaskPublic);
+
+export type TasksUpdateTaskData = {
+    requestBody: TaskUpdate;
+    taskId: string;
+};
+
+export type TasksUpdateTaskResponse = (TaskPublic);
+
+export type TasksDeleteTaskData = {
+    taskId: string;
+};
+
+export type TasksDeleteTaskResponse = (Message);
+
+export type TasksCompleteTaskData = {
+    taskId: string;
+};
+
+export type TasksCompleteTaskResponse = (TaskPublic);
+
+export type TasksReadTaskCompletionsData = {
+    taskId: string;
+};
+
+export type TasksReadTaskCompletionsResponse = (Array<TaskCompletionPublic>);
 
 export type UsersReadUserMeResponse = (UserPublic);
 
@@ -211,25 +308,6 @@ export type UsersRegisterUserData = {
 };
 
 export type UsersRegisterUserResponse = (UserPublic);
-
-export type UsersReadUserByIdData = {
-    userId: string;
-};
-
-export type UsersReadUserByIdResponse = (UserPublic);
-
-export type UsersUpdateUserData = {
-    requestBody: UserUpdate;
-    userId: string;
-};
-
-export type UsersUpdateUserResponse = (UserPublic);
-
-export type UsersDeleteUserData = {
-    userId: string;
-};
-
-export type UsersDeleteUserResponse = (Message);
 
 export type UtilsTestEmailData = {
     emailTo: string;

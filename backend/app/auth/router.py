@@ -6,7 +6,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.auth import service as auth_service
-from app.auth.dependencies import CurrentUser, SessionDep, get_current_active_superuser
+from app.auth.dependencies import CurrentUser, SessionDep
 from app.auth.schemas import NewPassword, Token
 from app.auth.security import create_access_token
 from app.config import settings
@@ -115,7 +115,6 @@ def reset_password(session: SessionDep, body: NewPassword) -> Message:
 
 @router.post(
     "/password-recovery-html-content/{email}",
-    dependencies=[Depends(get_current_active_superuser)],
     response_class=HTMLResponse,
 )
 def recover_password_html_content(email: str, session: SessionDep) -> HTMLResponse:

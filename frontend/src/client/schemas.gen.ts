@@ -57,21 +57,26 @@ export const Body_login_login_access_tokenSchema = {
     title: 'Body_login-login_access_token'
 } as const;
 
-export const HTTPValidationErrorSchema = {
+export const CategoriesPublicSchema = {
     properties: {
-        detail: {
+        data: {
             items: {
-                '$ref': '#/components/schemas/ValidationError'
+                '$ref': '#/components/schemas/CategoryPublic'
             },
             type: 'array',
-            title: 'Detail'
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
         }
     },
     type: 'object',
-    title: 'HTTPValidationError'
+    required: ['data', 'count'],
+    title: 'CategoriesPublic'
 } as const;
 
-export const ItemCreateSchema = {
+export const CategoryCreateSchema = {
     properties: {
         title: {
             type: 'string',
@@ -94,10 +99,10 @@ export const ItemCreateSchema = {
     },
     type: 'object',
     required: ['title'],
-    title: 'ItemCreate'
+    title: 'CategoryCreate'
 } as const;
 
-export const ItemPublicSchema = {
+export const CategoryPublicSchema = {
     properties: {
         title: {
             type: 'string',
@@ -142,10 +147,10 @@ export const ItemPublicSchema = {
     },
     type: 'object',
     required: ['title', 'id', 'owner_id'],
-    title: 'ItemPublic'
+    title: 'CategoryPublic'
 } as const;
 
-export const ItemUpdateSchema = {
+export const CategoryUpdateSchema = {
     properties: {
         title: {
             anyOf: [
@@ -174,26 +179,21 @@ export const ItemUpdateSchema = {
         }
     },
     type: 'object',
-    title: 'ItemUpdate'
+    title: 'CategoryUpdate'
 } as const;
 
-export const ItemsPublicSchema = {
+export const HTTPValidationErrorSchema = {
     properties: {
-        data: {
+        detail: {
             items: {
-                '$ref': '#/components/schemas/ItemPublic'
+                '$ref': '#/components/schemas/ValidationError'
             },
             type: 'array',
-            title: 'Data'
-        },
-        count: {
-            type: 'integer',
-            title: 'Count'
+            title: 'Detail'
         }
     },
     type: 'object',
-    required: ['data', 'count'],
-    title: 'ItemsPublic'
+    title: 'HTTPValidationError'
 } as const;
 
 export const MessageSchema = {
@@ -226,29 +226,447 @@ export const NewPasswordSchema = {
     title: 'NewPassword'
 } as const;
 
-export const PrivateUserCreateSchema = {
+export const RepeatTypeSchema = {
+    type: 'string',
+    enum: ['none', 'on_completion', 'on_due_date'],
+    title: 'RepeatType'
+} as const;
+
+export const TaskCompletionPublicSchema = {
     properties: {
-        email: {
+        id: {
             type: 'string',
-            title: 'Email'
+            format: 'uuid',
+            title: 'Id'
         },
-        password: {
+        task_id: {
             type: 'string',
-            title: 'Password'
+            format: 'uuid',
+            title: 'Task Id'
         },
-        full_name: {
+        completed_at: {
             type: 'string',
-            title: 'Full Name'
-        },
-        is_verified: {
-            type: 'boolean',
-            title: 'Is Verified',
-            default: false
+            format: 'date-time',
+            title: 'Completed At'
         }
     },
     type: 'object',
-    required: ['email', 'password', 'full_name'],
-    title: 'PrivateUserCreate'
+    required: ['id', 'task_id', 'completed_at'],
+    title: 'TaskCompletionPublic'
+} as const;
+
+export const TaskCompletionUpdateSchema = {
+    properties: {
+        completed_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Completed At'
+        }
+    },
+    type: 'object',
+    required: ['completed_at'],
+    title: 'TaskCompletionUpdate'
+} as const;
+
+export const TaskCompletionWithTaskSchema = {
+    properties: {
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        task_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Task Id'
+        },
+        completed_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Completed At'
+        },
+        task_title: {
+            type: 'string',
+            title: 'Task Title'
+        }
+    },
+    type: 'object',
+    required: ['id', 'task_id', 'completed_at', 'task_title'],
+    title: 'TaskCompletionWithTask'
+} as const;
+
+export const TaskCompletionsPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/TaskCompletionWithTask'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'TaskCompletionsPublic'
+} as const;
+
+export const TaskCreateSchema = {
+    properties: {
+        title: {
+            type: 'string',
+            maxLength: 255,
+            minLength: 1,
+            title: 'Title'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        },
+        category_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Category Id'
+        },
+        start_date: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Start Date'
+        },
+        due_date: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Due Date'
+        },
+        repeat_type: {
+            '$ref': '#/components/schemas/RepeatType',
+            default: 'none'
+        },
+        repeat_seconds: {
+            type: 'integer',
+            title: 'Repeat Seconds',
+            default: 0
+        },
+        repeat_minutes: {
+            type: 'integer',
+            title: 'Repeat Minutes',
+            default: 0
+        },
+        repeat_hours: {
+            type: 'integer',
+            title: 'Repeat Hours',
+            default: 0
+        },
+        repeat_days: {
+            type: 'integer',
+            title: 'Repeat Days',
+            default: 0
+        },
+        repeat_weeks: {
+            type: 'integer',
+            title: 'Repeat Weeks',
+            default: 0
+        },
+        repeat_months: {
+            type: 'integer',
+            title: 'Repeat Months',
+            default: 0
+        },
+        repeat_years: {
+            type: 'integer',
+            title: 'Repeat Years',
+            default: 0
+        }
+    },
+    type: 'object',
+    required: ['title'],
+    title: 'TaskCreate'
+} as const;
+
+export const TaskPublicSchema = {
+    properties: {
+        title: {
+            type: 'string',
+            maxLength: 255,
+            minLength: 1,
+            title: 'Title'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        },
+        category_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Category Id'
+        },
+        start_date: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Start Date'
+        },
+        due_date: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Due Date'
+        },
+        repeat_type: {
+            '$ref': '#/components/schemas/RepeatType',
+            default: 'none'
+        },
+        repeat_seconds: {
+            type: 'integer',
+            title: 'Repeat Seconds',
+            default: 0
+        },
+        repeat_minutes: {
+            type: 'integer',
+            title: 'Repeat Minutes',
+            default: 0
+        },
+        repeat_hours: {
+            type: 'integer',
+            title: 'Repeat Hours',
+            default: 0
+        },
+        repeat_days: {
+            type: 'integer',
+            title: 'Repeat Days',
+            default: 0
+        },
+        repeat_weeks: {
+            type: 'integer',
+            title: 'Repeat Weeks',
+            default: 0
+        },
+        repeat_months: {
+            type: 'integer',
+            title: 'Repeat Months',
+            default: 0
+        },
+        repeat_years: {
+            type: 'integer',
+            title: 'Repeat Years',
+            default: 0
+        },
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        owner_id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Owner Id'
+        },
+        completed: {
+            type: 'boolean',
+            title: 'Completed',
+            default: false
+        },
+        created_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Created At'
+        }
+    },
+    type: 'object',
+    required: ['title', 'id', 'owner_id'],
+    title: 'TaskPublic'
+} as const;
+
+export const TaskUpdateSchema = {
+    properties: {
+        title: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255,
+                    minLength: 1
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Title'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 255
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        },
+        category_id: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'uuid'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Category Id'
+        },
+        start_date: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Start Date'
+        },
+        due_date: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Due Date'
+        },
+        repeat_type: {
+            '$ref': '#/components/schemas/RepeatType',
+            default: 'none'
+        },
+        repeat_seconds: {
+            type: 'integer',
+            title: 'Repeat Seconds',
+            default: 0
+        },
+        repeat_minutes: {
+            type: 'integer',
+            title: 'Repeat Minutes',
+            default: 0
+        },
+        repeat_hours: {
+            type: 'integer',
+            title: 'Repeat Hours',
+            default: 0
+        },
+        repeat_days: {
+            type: 'integer',
+            title: 'Repeat Days',
+            default: 0
+        },
+        repeat_weeks: {
+            type: 'integer',
+            title: 'Repeat Weeks',
+            default: 0
+        },
+        repeat_months: {
+            type: 'integer',
+            title: 'Repeat Months',
+            default: 0
+        },
+        repeat_years: {
+            type: 'integer',
+            title: 'Repeat Years',
+            default: 0
+        }
+    },
+    type: 'object',
+    title: 'TaskUpdate'
+} as const;
+
+export const TasksPublicSchema = {
+    properties: {
+        data: {
+            items: {
+                '$ref': '#/components/schemas/TaskPublic'
+            },
+            type: 'array',
+            title: 'Data'
+        },
+        count: {
+            type: 'integer',
+            title: 'Count'
+        }
+    },
+    type: 'object',
+    required: ['data', 'count'],
+    title: 'TasksPublic'
 } as const;
 
 export const TokenSchema = {
@@ -288,48 +706,6 @@ export const UpdatePasswordSchema = {
     title: 'UpdatePassword'
 } as const;
 
-export const UserCreateSchema = {
-    properties: {
-        email: {
-            type: 'string',
-            maxLength: 255,
-            format: 'email',
-            title: 'Email'
-        },
-        is_active: {
-            type: 'boolean',
-            title: 'Is Active',
-            default: true
-        },
-        is_superuser: {
-            type: 'boolean',
-            title: 'Is Superuser',
-            default: false
-        },
-        full_name: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 255
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Full Name'
-        },
-        password: {
-            type: 'string',
-            maxLength: 128,
-            minLength: 8,
-            title: 'Password'
-        }
-    },
-    type: 'object',
-    required: ['email', 'password'],
-    title: 'UserCreate'
-} as const;
-
 export const UserPublicSchema = {
     properties: {
         email: {
@@ -342,11 +718,6 @@ export const UserPublicSchema = {
             type: 'boolean',
             title: 'Is Active',
             default: true
-        },
-        is_superuser: {
-            type: 'boolean',
-            title: 'Is Superuser',
-            default: false
         },
         full_name: {
             anyOf: [
@@ -415,61 +786,6 @@ export const UserRegisterSchema = {
     title: 'UserRegister'
 } as const;
 
-export const UserUpdateSchema = {
-    properties: {
-        email: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 255,
-                    format: 'email'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Email'
-        },
-        is_active: {
-            type: 'boolean',
-            title: 'Is Active',
-            default: true
-        },
-        is_superuser: {
-            type: 'boolean',
-            title: 'Is Superuser',
-            default: false
-        },
-        full_name: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 255
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Full Name'
-        },
-        password: {
-            anyOf: [
-                {
-                    type: 'string',
-                    maxLength: 128,
-                    minLength: 8
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Password'
-        }
-    },
-    type: 'object',
-    title: 'UserUpdate'
-} as const;
-
 export const UserUpdateMeSchema = {
     properties: {
         full_name: {
@@ -500,25 +816,6 @@ export const UserUpdateMeSchema = {
     },
     type: 'object',
     title: 'UserUpdateMe'
-} as const;
-
-export const UsersPublicSchema = {
-    properties: {
-        data: {
-            items: {
-                '$ref': '#/components/schemas/UserPublic'
-            },
-            type: 'array',
-            title: 'Data'
-        },
-        count: {
-            type: 'integer',
-            title: 'Count'
-        }
-    },
-    type: 'object',
-    required: ['data', 'count'],
-    title: 'UsersPublic'
 } as const;
 
 export const ValidationErrorSchema = {
