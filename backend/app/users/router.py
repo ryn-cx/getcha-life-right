@@ -10,9 +10,10 @@ from app.auth.dependencies import (
 )
 from app.auth.schemas import UpdatePassword
 from app.auth.security import get_password_hash, verify_password
+from app.categories.models import Category
 from app.config import settings
-from app.items.models import Item
 from app.models import Message
+from app.tasks.models import Task
 from app.users import service as user_service
 from app.users.models import User
 from app.users.schemas import (
@@ -256,7 +257,9 @@ def delete_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Super users are not allowed to delete themselves",
         )
-    statement = delete(Item).where(col(Item.owner_id) == user_id)
+    statement = delete(Task).where(col(Task.owner_id) == user_id)
+    session.exec(statement)
+    statement = delete(Category).where(col(Category.owner_id) == user_id)
     session.exec(statement)
     session.delete(user)
     session.commit()

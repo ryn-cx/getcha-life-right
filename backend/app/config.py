@@ -1,5 +1,6 @@
 import secrets
 import warnings
+from pathlib import Path
 from typing import Annotated, Literal
 
 from pydantic import (
@@ -25,8 +26,9 @@ def parse_cors(v: str | list[str] | None) -> list[str] | str:
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        # Use top level .env file (one level above ./backend/)
-        env_file="../.env",
+        # Use top level .env file (one level above ./backend/).
+        # Uses an absolute path so tests work regardless of working directory.
+        env_file=Path(__file__).resolve().parents[2] / ".env",
         env_ignore_empty=True,
         extra="ignore",
     )

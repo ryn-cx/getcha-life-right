@@ -1,11 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { Plus } from "lucide-react"
+import { Pencil } from "lucide-react"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-import { type ItemCreate, ItemsService } from "@/client"
+import { CategoriesService, type CategoryPublic } from "@/client"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -15,8 +15,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import {
   Form,
   FormControl,
@@ -37,7 +37,12 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>
 
-const AddItem = () => {
+interface EditCategoryProps {
+  category: CategoryPublic
+  onSuccess: () => void
+}
+
+const EditCategory = ({ category, onSuccess }: EditCategoryProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
@@ -47,22 +52,25 @@ const AddItem = () => {
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: {
-      title: "",
-      description: "",
+      title: category.title,
+      description: category.description ?? undefined,
     },
   })
 
   const mutation = useMutation({
-    mutationFn: (data: ItemCreate) =>
-      ItemsService.createItem({ requestBody: data }),
+    mutationFn: (data: FormData) =>
+      CategoriesService.updateCategory({
+        categoryId: category.id,
+        requestBody: data,
+      }),
     onSuccess: () => {
-      showSuccessToast("Item created successfully")
-      form.reset()
+      showSuccessToast("Category updated successfully")
       setIsOpen(false)
+      onSuccess()
     },
     onError: handleError.bind(showErrorToast),
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["items"] })
+      queryClient.invalidateQueries({ queryKey: ["categories"] })
     },
   })
 
@@ -72,21 +80,22 @@ const AddItem = () => {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button className="my-4">
-          <Plus className="mr-2" />
-          Add Item
-        </Button>
-      </DialogTrigger>
+      <DropdownMenuItem
+        onSelect={(e) => e.preventDefault()}
+        onClick={() => setIsOpen(true)}
+      >
+        <Pencil />
+        Edit Category
+      </DropdownMenuItem>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Add Item</DialogTitle>
-          <DialogDescription>
-            Fill in the details to add a new item.
-          </DialogDescription>
-        </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
+            <DialogHeader>
+              <DialogTitle>Edit Category</DialogTitle>
+              <DialogDescription>
+                Update the category details below.
+              </DialogDescription>
+            </DialogHeader>
             <div className="grid gap-4 py-4">
               <FormField
                 control={form.control}
@@ -97,12 +106,7 @@ const AddItem = () => {
                       Title <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        placeholder="Title"
-                        type="text"
-                        {...field}
-                        required
-                      />
+                      <Input placeholder="Title" type="text" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -141,4 +145,4 @@ const AddItem = () => {
   )
 }
 
-export default AddItem
+export default EditCategory

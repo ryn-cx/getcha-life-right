@@ -7,7 +7,8 @@ from sqlalchemy import DateTime
 from sqlmodel import Field, Relationship, SQLModel
 
 if TYPE_CHECKING:
-    from app.items.models import Item
+    from app.categories.models import Category
+    from app.tasks.models import Task
 
 
 def get_datetime_utc() -> datetime:
@@ -30,4 +31,8 @@ class User(UserBase, table=True):
         default_factory=get_datetime_utc,
         sa_type=DateTime(timezone=True),  # type: ignore[call-overload]
     )
-    items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
+    tasks: list["Task"] = Relationship(back_populates="owner", cascade_delete=True)
+    categories: list["Category"] = Relationship(
+        back_populates="owner",
+        cascade_delete=True,
+    )

@@ -11,7 +11,7 @@ import useAuth from "@/hooks/useAuth"
 
 function getUsersQueryOptions() {
   return {
-    queryFn: () => UsersService.readUsers({ skip: 0, limit: 100 }),
+    queryFn: () => UsersService.readUsers(),
     queryKey: ["users"],
   }
 }
@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_layout/admin")({
   head: () => ({
     meta: [
       {
-        title: "Admin - FastAPI Template",
+        title: "Admin - Getcha Life Right",
       },
     ],
   }),
