@@ -1,6 +1,6 @@
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { Search } from "lucide-react"
+import { Search, SlidersHorizontal } from "lucide-react"
 import { Suspense, useMemo, useState } from "react"
 
 import { CategoriesService, type TaskPublic, TasksService } from "@/client"
@@ -8,9 +8,17 @@ import { DataTable } from "@/components/Common/DataTable"
 import PendingTasks from "@/components/Pending/PendingTasks"
 import AddTask from "@/components/Tasks/AddTask"
 import { createColumns } from "@/components/Tasks/columns"
+import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 
 function getTasksQueryOptions() {
   return {
@@ -135,7 +143,7 @@ function FilterSidebar({
   }
 
   return (
-    <div className="w-56 shrink-0 space-y-4">
+    <div className="space-y-4">
       <div>
         <h3 className="text-sm font-semibold mb-2">Status</h3>
         <div className="space-y-2">
@@ -354,10 +362,28 @@ function Tasks() {
           <h1 className="text-2xl font-bold tracking-tight">Tasks</h1>
           <p className="text-muted-foreground">Create and manage your tasks</p>
         </div>
-        <AddTask />
+        <div className="flex items-center gap-2">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" className="md:hidden">
+                <SlidersHorizontal className="size-4" />
+                <span className="sr-only">Filters</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72 overflow-y-auto p-4">
+              <SheetHeader className="p-0">
+                <SheetTitle>Filters</SheetTitle>
+              </SheetHeader>
+              <FilterSidebar filters={filters} onChange={setFilters} />
+            </SheetContent>
+          </Sheet>
+          <AddTask />
+        </div>
       </div>
       <div className="flex gap-6">
-        <FilterSidebar filters={filters} onChange={setFilters} />
+        <aside className="hidden md:block w-56 shrink-0">
+          <FilterSidebar filters={filters} onChange={setFilters} />
+        </aside>
         <div className="flex-1 min-w-0">
           <TasksTable filters={filters} />
         </div>
