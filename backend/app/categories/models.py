@@ -19,6 +19,7 @@ def get_datetime_utc() -> datetime:
 class CategoryBase(SQLModel):
     title: str = Field(min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=255)
+    color: str | None = Field(default=None, max_length=32)
 
 
 # Database model, database table inferred from class name

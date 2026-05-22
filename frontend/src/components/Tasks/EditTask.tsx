@@ -1,12 +1,13 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Pencil } from "lucide-react"
+import { CircleCheck, Pencil, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
 import { CategoriesService, type TaskPublic, TasksService } from "@/client"
 import { Button } from "@/components/ui/button"
+import { ColorInput } from "@/components/ui/color-input"
 import {
   Dialog,
   DialogClose,
@@ -59,6 +60,7 @@ const formSchema = z
     title: z.string().min(1, { message: "Title is required" }),
     description: z.string().optional(),
     category_id: z.string().nullable().optional(),
+    color: z.string().nullable().optional(),
     start_date: z.string().optional(),
     start_time: z.string().optional(),
     due_date: z.string().optional(),
@@ -85,10 +87,25 @@ type FormData = z.infer<typeof formSchema>
 
 interface EditTaskProps {
   task: TaskPublic
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  hideTrigger?: boolean
 }
 
-const EditTask = ({ task }: EditTaskProps) => {
-  const [isOpen, setIsOpen] = useState(false)
+const EditTask = ({
+  task,
+  open,
+  onOpenChange,
+  hideTrigger = false,
+}: EditTaskProps) => {
+  const isControlled = open !== undefined && onOpenChange !== undefined
+  const [internalOpen, setInternalOpen] = useState(false)
+  const isOpen = isControlled ? (open as boolean) : internalOpen
+  const setIsOpen = isControlled
+    ? (onOpenChange as (open: boolean) => void)
+    : setInternalOpen
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmCompleteEarly, setConfirmCompleteEarly] = useState(false)
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
@@ -105,6 +122,7 @@ const EditTask = ({ task }: EditTaskProps) => {
       title: task.title,
       description: task.description ?? undefined,
       category_id: task.category_id ?? null,
+      color: task.color ?? null,
       start_date: isoToDate(task.start_date),
       start_time: isoToTime(task.start_date),
       due_date: isoToDate(task.due_date),
@@ -157,20 +175,64 @@ const EditTask = ({ task }: EditTaskProps) => {
     },
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: () => TasksService.deleteTask({ taskId: task.id }),
+    onSuccess: () => {
+      showSuccessToast("The task was deleted successfully")
+      setConfirmDelete(false)
+      setIsOpen(false)
+    },
+    onError: handleError.bind(showErrorToast),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] })
+    },
+  })
+
+  const completeMutation = useMutation({
+    mutationFn: () => TasksService.completeTask({ taskId: task.id }),
+    onSuccess: () => {
+      showSuccessToast("Task completed")
+      setConfirmCompleteEarly(false)
+      setIsOpen(false)
+    },
+    onError: handleError.bind(showErrorToast),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] })
+    },
+  })
+
   const onSubmit = (data: FormData) => {
     mutation.mutate(data)
   }
 
+  const isBeforeStartDate = () => {
+    if (!task.start_date) return false
+    return new Date() < new Date(task.start_date)
+  }
+
+  const handleCompleteClick = () => {
+    if (isBeforeStartDate()) {
+      setConfirmCompleteEarly(true)
+    } else {
+      completeMutation.mutate()
+    }
+  }
+
+  const anyPending =
+    mutation.isPending || deleteMutation.isPending || completeMutation.isPending
+
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => setIsOpen(true)}
-        title="Edit task"
-      >
-        <Pencil />
-      </Button>
+      {!hideTrigger && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsOpen(true)}
+          title="Edit task"
+        >
+          <Pencil />
+        </Button>
+      )}
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -379,21 +441,115 @@ const EditTask = ({ task }: EditTaskProps) => {
                   ))}
                 </div>
               )}
+
+              <FormField
+                control={form.control}
+                name="color"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Color</FormLabel>
+                    <FormControl>
+                      <ColorInput
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline" disabled={mutation.isPending}>
-                  Cancel
+            <DialogFooter className="sm:justify-between">
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => setConfirmDelete(true)}
+                  disabled={anyPending}
+                >
+                  <Trash2 />
+                  Delete
                 </Button>
-              </DialogClose>
-              <LoadingButton type="submit" loading={mutation.isPending}>
-                Save
-              </LoadingButton>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCompleteClick}
+                  disabled={anyPending || task.completed}
+                  title={task.completed ? "Already completed" : "Complete task"}
+                >
+                  <CircleCheck />
+                  {task.completed ? "Completed" : "Complete"}
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <DialogClose asChild>
+                  <Button type="button" variant="outline" disabled={anyPending}>
+                    Cancel
+                  </Button>
+                </DialogClose>
+                <LoadingButton type="submit" loading={mutation.isPending}>
+                  Save
+                </LoadingButton>
+              </div>
             </DialogFooter>
           </form>
         </Form>
       </DialogContent>
+
+      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Task</DialogTitle>
+            <DialogDescription>
+              This task will be permanently deleted. Are you sure? You will not
+              be able to undo this action.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" disabled={deleteMutation.isPending}>
+                Cancel
+              </Button>
+            </DialogClose>
+            <LoadingButton
+              variant="destructive"
+              loading={deleteMutation.isPending}
+              onClick={() => deleteMutation.mutate()}
+            >
+              Delete
+            </LoadingButton>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={confirmCompleteEarly}
+        onOpenChange={setConfirmCompleteEarly}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Complete early?</DialogTitle>
+            <DialogDescription>
+              This task's start date hasn't arrived yet. Are you sure you want
+              to mark it as complete?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" disabled={completeMutation.isPending}>
+                Cancel
+              </Button>
+            </DialogClose>
+            <LoadingButton
+              loading={completeMutation.isPending}
+              onClick={() => completeMutation.mutate()}
+            >
+              Complete anyway
+            </LoadingButton>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   )
 }

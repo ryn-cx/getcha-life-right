@@ -1,14 +1,16 @@
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { Search, SlidersHorizontal } from "lucide-react"
+import { CalendarDays, List, Search, SlidersHorizontal } from "lucide-react"
 import { Suspense, useMemo, useState } from "react"
 
 import { CategoriesService, type TaskPublic, TasksService } from "@/client"
 import { DataTable } from "@/components/Common/DataTable"
 import PendingTasks from "@/components/Pending/PendingTasks"
 import AddTask from "@/components/Tasks/AddTask"
+import { CalendarView } from "@/components/Tasks/CalendarView"
 import { createColumns } from "@/components/Tasks/columns"
 import { Button } from "@/components/ui/button"
+import { ButtonGroup } from "@/components/ui/button-group"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
@@ -19,6 +21,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
+import { resolveTaskColor, tintBackground } from "@/lib/task-colors"
 
 function getTasksQueryOptions() {
   return {
@@ -102,9 +105,13 @@ function applyFilters(tasks: TaskPublic[], filters: TaskFilters): TaskPublic[] {
 function FilterSidebar({
   filters,
   onChange,
+  colorizeRows,
+  onColorizeRowsChange,
 }: {
   filters: TaskFilters
   onChange: (filters: TaskFilters) => void
+  colorizeRows: boolean
+  onColorizeRowsChange: (value: boolean) => void
 }) {
   const { data: categories } = useQuery({
     queryFn: () => CategoriesService.readCategories(),
@@ -297,16 +304,49 @@ function FilterSidebar({
           ))}
         </div>
       </div>
+
+      <Separator />
+
+      <div>
+        <h3 className="text-sm font-semibold mb-2">Display</h3>
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="filter-colorize-rows"
+            checked={colorizeRows}
+            onCheckedChange={(checked) =>
+              onColorizeRowsChange(checked === true)
+            }
+          />
+          <Label htmlFor="filter-colorize-rows" className="text-sm font-normal">
+            Colorize rows
+          </Label>
+        </div>
+      </div>
     </div>
   )
 }
 
-function TasksTableContent({ filters }: { filters: TaskFilters }) {
+type ViewMode = "table" | "calendar"
+
+function TasksContent({
+  filters,
+  viewMode,
+  colorizeRows,
+}: {
+  filters: TaskFilters
+  viewMode: ViewMode
+  colorizeRows: boolean
+}) {
   const { data: tasks } = useSuspenseQuery(getTasksQueryOptions())
   const { data: categories } = useQuery({
     queryFn: () => CategoriesService.readCategories(),
     queryKey: ["categories"],
   })
+
+  const categoryMap = useMemo(
+    () => new Map((categories?.data ?? []).map((c) => [c.id, c] as const)),
+    [categories?.data],
+  )
 
   const columns = useMemo(
     () => createColumns(categories?.data ?? []),
@@ -318,6 +358,15 @@ function TasksTableContent({ filters }: { filters: TaskFilters }) {
     [tasks.data, filters],
   )
 
+  const rowStyle = useMemo(() => {
+    if (!colorizeRows) return undefined
+    return (task: TaskPublic) => {
+      const color = resolveTaskColor(task, categoryMap)
+      if (!color) return undefined
+      return { backgroundColor: tintBackground(color) }
+    }
+  }, [colorizeRows, categoryMap])
+
   if (tasks.data.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-12">
@@ -327,6 +376,12 @@ function TasksTableContent({ filters }: { filters: TaskFilters }) {
         <h3 className="text-lg font-semibold">You don't have any tasks yet</h3>
         <p className="text-muted-foreground">Add a new task to get started</p>
       </div>
+    )
+  }
+
+  if (viewMode === "calendar") {
+    return (
+      <CalendarView tasks={filteredData} categories={categories?.data ?? []} />
     )
   }
 
@@ -341,19 +396,33 @@ function TasksTableContent({ filters }: { filters: TaskFilters }) {
     )
   }
 
-  return <DataTable columns={columns} data={filteredData} />
+  return <DataTable columns={columns} data={filteredData} rowStyle={rowStyle} />
 }
 
-function TasksTable({ filters }: { filters: TaskFilters }) {
+function TasksContentSuspense({
+  filters,
+  viewMode,
+  colorizeRows,
+}: {
+  filters: TaskFilters
+  viewMode: ViewMode
+  colorizeRows: boolean
+}) {
   return (
     <Suspense fallback={<PendingTasks />}>
-      <TasksTableContent filters={filters} />
+      <TasksContent
+        filters={filters}
+        viewMode={viewMode}
+        colorizeRows={colorizeRows}
+      />
     </Suspense>
   )
 }
 
 function Tasks() {
   const [filters, setFilters] = useState<TaskFilters>(defaultFilters)
+  const [viewMode, setViewMode] = useState<ViewMode>("table")
+  const [colorizeRows, setColorizeRows] = useState(false)
 
   return (
     <div className="flex flex-col gap-6">
@@ -374,18 +443,52 @@ function Tasks() {
               <SheetHeader className="p-0">
                 <SheetTitle>Filters</SheetTitle>
               </SheetHeader>
-              <FilterSidebar filters={filters} onChange={setFilters} />
+              <FilterSidebar
+                filters={filters}
+                onChange={setFilters}
+                colorizeRows={colorizeRows}
+                onColorizeRowsChange={setColorizeRows}
+              />
             </SheetContent>
           </Sheet>
+          <ButtonGroup>
+            <Button
+              variant={viewMode === "table" ? "default" : "outline"}
+              size="icon"
+              onClick={() => setViewMode("table")}
+              aria-label="Table view"
+              aria-pressed={viewMode === "table"}
+            >
+              <List className="size-4" />
+            </Button>
+            <Button
+              variant={viewMode === "calendar" ? "default" : "outline"}
+              size="icon"
+              onClick={() => setViewMode("calendar")}
+              aria-label="Calendar view"
+              aria-pressed={viewMode === "calendar"}
+            >
+              <CalendarDays className="size-4" />
+            </Button>
+          </ButtonGroup>
           <AddTask />
         </div>
       </div>
       <div className="flex gap-6">
         <aside className="hidden md:block w-56 shrink-0">
-          <FilterSidebar filters={filters} onChange={setFilters} />
+          <FilterSidebar
+            filters={filters}
+            onChange={setFilters}
+            colorizeRows={colorizeRows}
+            onColorizeRowsChange={setColorizeRows}
+          />
         </aside>
         <div className="flex-1 min-w-0">
-          <TasksTable filters={filters} />
+          <TasksContentSuspense
+            filters={filters}
+            viewMode={viewMode}
+            colorizeRows={colorizeRows}
+          />
         </div>
       </div>
     </div>

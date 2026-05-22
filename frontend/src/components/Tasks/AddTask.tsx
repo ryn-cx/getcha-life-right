@@ -7,6 +7,7 @@ import { z } from "zod"
 
 import { CategoriesService, type TaskCreate, TasksService } from "@/client"
 import { Button } from "@/components/ui/button"
+import { ColorInput } from "@/components/ui/color-input"
 import {
   Dialog,
   DialogClose,
@@ -48,6 +49,7 @@ const formSchema = z
     title: z.string().min(1, { message: "Title is required" }),
     description: z.string().optional(),
     category_id: z.string().nullable().optional(),
+    color: z.string().nullable().optional(),
     start_date: z.string().optional(),
     start_time: z.string().optional(),
     due_date: z.string().optional(),
@@ -90,6 +92,7 @@ const AddTask = () => {
       title: "",
       description: "",
       category_id: null,
+      color: null,
       start_date: "",
       start_time: "",
       due_date: "",
@@ -363,6 +366,23 @@ const AddTask = () => {
                   ))}
                 </div>
               )}
+
+              <FormField
+                control={form.control}
+                name="color"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Color</FormLabel>
+                    <FormControl>
+                      <ColorInput
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             <DialogFooter>

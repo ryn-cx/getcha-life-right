@@ -7,6 +7,7 @@ import { z } from "zod"
 
 import { CategoriesService, type CategoryCreate } from "@/client"
 import { Button } from "@/components/ui/button"
+import { ColorInput } from "@/components/ui/color-input"
 import {
   Dialog,
   DialogClose,
@@ -33,6 +34,7 @@ import { handleError } from "@/utils"
 const formSchema = z.object({
   title: z.string().min(1, { message: "Title is required" }),
   description: z.string().optional(),
+  color: z.string().nullable().optional(),
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -49,6 +51,7 @@ const AddCategory = () => {
     defaultValues: {
       title: "",
       description: "",
+      color: null,
     },
   })
 
@@ -117,6 +120,23 @@ const AddCategory = () => {
                     <FormLabel>Description</FormLabel>
                     <FormControl>
                       <Input placeholder="Description" type="text" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="color"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Color</FormLabel>
+                    <FormControl>
+                      <ColorInput
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

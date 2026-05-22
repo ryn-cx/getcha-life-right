@@ -27,6 +27,7 @@ class TaskBase(SQLModel):
     title: str = Field(min_length=1, max_length=255)
     description: str | None = Field(default=None, max_length=255)
     category_id: uuid.UUID | None = None
+    color: str | None = Field(default=None, max_length=32)
     start_date: datetime | None = Field(
         default=None,
         sa_type=DateTime(timezone=True),  # type: ignore[call-overload]

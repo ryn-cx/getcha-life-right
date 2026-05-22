@@ -17,11 +17,13 @@ export type CategoriesPublic = {
 export type CategoryCreate = {
     title: string;
     description?: (string | null);
+    color?: (string | null);
 };
 
 export type CategoryPublic = {
     title: string;
     description?: (string | null);
+    color?: (string | null);
     id: string;
     owner_id: string;
     created_at?: (string | null);
@@ -30,6 +32,7 @@ export type CategoryPublic = {
 export type CategoryUpdate = {
     title?: (string | null);
     description?: (string | null);
+    color?: (string | null);
 };
 
 export type HTTPValidationError = {
@@ -73,6 +76,7 @@ export type TaskCreate = {
     title: string;
     description?: (string | null);
     category_id?: (string | null);
+    color?: (string | null);
     start_date?: (string | null);
     due_date?: (string | null);
     repeat_type?: RepeatType;
@@ -89,6 +93,7 @@ export type TaskPublic = {
     title: string;
     description?: (string | null);
     category_id?: (string | null);
+    color?: (string | null);
     start_date?: (string | null);
     due_date?: (string | null);
     repeat_type?: RepeatType;
@@ -114,6 +119,7 @@ export type TaskUpdate = {
     title?: (string | null);
     description?: (string | null);
     category_id?: (string | null);
+    color?: (string | null);
     start_date?: (string | null);
     due_date?: (string | null);
     repeat_type?: RepeatType;

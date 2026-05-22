@@ -95,6 +95,18 @@ export const CategoryCreateSchema = {
                 }
             ],
             title: 'Description'
+        },
+        color: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 32
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Color'
         }
     },
     type: 'object',
@@ -121,6 +133,18 @@ export const CategoryPublicSchema = {
                 }
             ],
             title: 'Description'
+        },
+        color: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 32
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Color'
         },
         id: {
             type: 'string',
@@ -176,6 +200,18 @@ export const CategoryUpdateSchema = {
                 }
             ],
             title: 'Description'
+        },
+        color: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 32
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Color'
         }
     },
     type: 'object',
@@ -346,6 +382,18 @@ export const TaskCreateSchema = {
             ],
             title: 'Category Id'
         },
+        color: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 32
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Color'
+        },
         start_date: {
             anyOf: [
                 {
@@ -446,6 +494,18 @@ export const TaskPublicSchema = {
                 }
             ],
             title: 'Category Id'
+        },
+        color: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 32
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Color'
         },
         start_date: {
             anyOf: [
@@ -581,6 +641,18 @@ export const TaskUpdateSchema = {
                 }
             ],
             title: 'Category Id'
+        },
+        color: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 32
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Color'
         },
         start_date: {
             anyOf: [
