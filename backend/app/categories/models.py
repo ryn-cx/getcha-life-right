@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 def get_datetime_utc() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 # Shared properties
@@ -35,4 +35,4 @@ class Category(CategoryBase, table=True):
         ondelete="CASCADE",
     )
     owner: User | None = Relationship(back_populates="categories")
-    tasks: list["Task"] = Relationship(back_populates="category")
+    tasks: list[Task] = Relationship(back_populates="category")

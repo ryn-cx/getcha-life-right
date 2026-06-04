@@ -7,7 +7,7 @@ from sqlmodel import col, func, select
 
 from app.auth.dependencies import CurrentUser, SessionDep
 from app.categories.models import Category
-from app.models import Message
+from app.schemas import Message
 from app.tasks.models import RepeatType, Task, TaskCompletion, get_datetime_utc
 from app.tasks.recurrence import set_task_dates
 from app.tasks.schemas import (

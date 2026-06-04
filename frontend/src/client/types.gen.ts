@@ -39,6 +39,9 @@ export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
 
+/**
+ * Generic message.
+ */
 export type Message = {
     message: string;
 };

@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, status
 from app.auth.dependencies import CurrentUser, SessionDep
 from app.auth.schemas import UpdatePassword
 from app.auth.security import get_password_hash, verify_password
-from app.models import Message
+from app.schemas import Message
 from app.users import service as user_service
 from app.users.models import User
 from app.users.schemas import (

@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from pydantic import EmailStr
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 def get_datetime_utc() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 # Shared properties
@@ -30,8 +30,8 @@ class User(UserBase, table=True):
         default_factory=get_datetime_utc,
         sa_type=DateTime(timezone=True),  # type: ignore[call-overload]
     )
-    tasks: list["Task"] = Relationship(back_populates="owner", cascade_delete=True)
-    categories: list["Category"] = Relationship(
+    tasks: list[Task] = Relationship(back_populates="owner", cascade_delete=True)
+    categories: list[Category] = Relationship(
         back_populates="owner",
         cascade_delete=True,
     )
