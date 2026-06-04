@@ -8,6 +8,7 @@ export const columns: ColumnDef<TaskCompletionWithTask>[] = [
   {
     accessorKey: "task_title",
     header: "Task",
+    meta: { filterVariant: "text" },
     cell: ({ row }) => (
       <span className="font-medium">{row.original.task_title}</span>
     ),
@@ -15,6 +16,7 @@ export const columns: ColumnDef<TaskCompletionWithTask>[] = [
   {
     accessorKey: "completed_at",
     header: "Completed At",
+    enableColumnFilter: false,
     cell: ({ row }) => {
       const d = new Date(row.original.completed_at)
       return (
@@ -34,6 +36,9 @@ export const columns: ColumnDef<TaskCompletionWithTask>[] = [
   },
   {
     id: "actions",
+    enableSorting: false,
+    enableColumnFilter: false,
+    enableHiding: false,
     header: () => <span className="sr-only">Actions</span>,
     cell: ({ row }) => (
       <div className="flex justify-end gap-1">

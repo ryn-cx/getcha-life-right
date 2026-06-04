@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { CircleCheck, Pencil, Trash2 } from "lucide-react"
+import { Circle, CircleCheck, Pencil, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -201,6 +201,23 @@ const EditTask = ({
     },
   })
 
+  const toggleStatusMutation = useMutation({
+    mutationFn: () =>
+      TasksService.updateTask({
+        taskId: task.id,
+        requestBody: { completed: !task.completed },
+      }),
+    onSuccess: () => {
+      showSuccessToast(
+        task.completed ? "Task marked active" : "Task marked done",
+      )
+    },
+    onError: handleError.bind(showErrorToast),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] })
+    },
+  })
+
   const onSubmit = (data: FormData) => {
     mutation.mutate(data)
   }
@@ -219,7 +236,10 @@ const EditTask = ({
   }
 
   const anyPending =
-    mutation.isPending || deleteMutation.isPending || completeMutation.isPending
+    mutation.isPending ||
+    deleteMutation.isPending ||
+    completeMutation.isPending ||
+    toggleStatusMutation.isPending
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -480,6 +500,16 @@ const EditTask = ({
                 >
                   <CircleCheck />
                   {task.completed ? "Completed" : "Complete"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => toggleStatusMutation.mutate()}
+                  disabled={anyPending}
+                  title={task.completed ? "Mark as active" : "Mark as done"}
+                >
+                  {task.completed ? <Circle /> : <CircleCheck />}
+                  {task.completed ? "Mark active" : "Mark done"}
                 </Button>
               </div>
               <div className="flex gap-2">

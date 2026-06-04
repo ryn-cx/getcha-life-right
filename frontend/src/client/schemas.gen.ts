@@ -716,6 +716,17 @@ export const TaskUpdateSchema = {
             type: 'integer',
             title: 'Repeat Years',
             default: 0
+        },
+        completed: {
+            anyOf: [
+                {
+                    type: 'boolean'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Completed'
         }
     },
     type: 'object',

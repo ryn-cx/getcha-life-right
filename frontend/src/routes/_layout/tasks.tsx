@@ -1,10 +1,17 @@
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
+import {
+  getCoreRowModel,
+  useReactTable,
+  type VisibilityState,
+} from "@tanstack/react-table"
 import { CalendarDays, List, Search, SlidersHorizontal } from "lucide-react"
 import { Suspense, useMemo, useState } from "react"
 
 import { CategoriesService, type TaskPublic, TasksService } from "@/client"
+import { ColumnVisibilityButton } from "@/components/Common/ColumnVisibilityButton"
 import { DataTable } from "@/components/Common/DataTable"
+import { PageHeader } from "@/components/Common/PageHeader"
 import PendingTasks from "@/components/Pending/PendingTasks"
 import AddTask from "@/components/Tasks/AddTask"
 import { CalendarView } from "@/components/Tasks/CalendarView"
@@ -21,6 +28,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
+import { usePersistedJsonState } from "@/hooks/usePersistedState"
 import { resolveTaskColor, tintBackground } from "@/lib/task-colors"
 
 function getTasksQueryOptions() {
@@ -367,6 +375,17 @@ function TasksContent({
     }
   }, [colorizeRows, categoryMap])
 
+  const [columnVisibility, setColumnVisibility] =
+    usePersistedJsonState<VisibilityState>("tasks-column-visibility", {})
+
+  const table = useReactTable({
+    data: filteredData,
+    columns,
+    state: { columnVisibility },
+    onColumnVisibilityChange: setColumnVisibility,
+    getCoreRowModel: getCoreRowModel(),
+  })
+
   if (tasks.data.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-12">
@@ -396,7 +415,21 @@ function TasksContent({
     )
   }
 
-  return <DataTable columns={columns} data={filteredData} rowStyle={rowStyle} />
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex justify-end">
+        <ColumnVisibilityButton table={table} />
+      </div>
+      <DataTable
+        columns={columns}
+        data={filteredData}
+        rowStyle={rowStyle}
+        storageKey="tasks"
+        columnVisibility={columnVisibility}
+        onColumnVisibilityChange={setColumnVisibility}
+      />
+    </div>
+  )
 }
 
 function TasksContentSuspense({
@@ -426,11 +459,7 @@ function Tasks() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Tasks</h1>
-          <p className="text-muted-foreground">Create and manage your tasks</p>
-        </div>
+      <PageHeader title="Tasks" description="Create and manage your tasks">
         <div className="flex items-center gap-2">
           <Sheet>
             <SheetTrigger asChild>
@@ -473,7 +502,7 @@ function Tasks() {
           </ButtonGroup>
           <AddTask />
         </div>
-      </div>
+      </PageHeader>
       <div className="flex gap-6">
         <aside className="hidden md:block w-56 shrink-0">
           <FilterSidebar

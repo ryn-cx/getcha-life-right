@@ -8,6 +8,7 @@ export const columns: ColumnDef<CategoryPublic>[] = [
   {
     accessorKey: "title",
     header: "Title",
+    meta: { filterVariant: "text" },
     cell: ({ row }) => (
       <span className="font-medium">{row.original.title}</span>
     ),
@@ -15,6 +16,7 @@ export const columns: ColumnDef<CategoryPublic>[] = [
   {
     accessorKey: "description",
     header: "Description",
+    meta: { filterVariant: "text" },
     cell: ({ row }) => {
       const description = row.original.description
       return (
@@ -31,6 +33,9 @@ export const columns: ColumnDef<CategoryPublic>[] = [
   },
   {
     id: "actions",
+    enableSorting: false,
+    enableColumnFilter: false,
+    enableHiding: false,
     header: () => <span className="sr-only">Actions</span>,
     cell: ({ row }) => (
       <div className="flex justify-end">

@@ -14,6 +14,7 @@ class TaskCreate(TaskBase):
 # Properties to receive on task update
 class TaskUpdate(TaskBase):
     title: str | None = Field(default=None, min_length=1, max_length=255)  # type: ignore[assignment]
+    completed: bool | None = None
 
 
 # Properties to return via API, id is always required

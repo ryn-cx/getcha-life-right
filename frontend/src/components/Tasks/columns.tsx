@@ -38,6 +38,7 @@ export function createColumns(
     {
       accessorKey: "title",
       header: "Title",
+      meta: { filterVariant: "text" },
       cell: ({ row }) => (
         <span className="font-medium">{row.original.title}</span>
       ),
@@ -45,6 +46,7 @@ export function createColumns(
     {
       accessorKey: "completed",
       header: "Status",
+      enableColumnFilter: false,
       cell: ({ row }) => (
         <Badge variant={row.original.completed ? "secondary" : "default"}>
           {row.original.completed ? "Done" : "Active"}
@@ -67,10 +69,12 @@ export function createColumns(
         )
       },
       enableSorting: false,
+      enableColumnFilter: false,
     },
     {
       accessorKey: "due_date",
       header: "Due Date",
+      enableColumnFilter: false,
       cell: ({ row }) => {
         const dateStr = formatDate(row.original.due_date)
         if (!dateStr) {
@@ -97,6 +101,7 @@ export function createColumns(
     {
       accessorKey: "start_date",
       header: "Start Date",
+      enableColumnFilter: false,
       cell: ({ row }) => {
         const dateStr = formatDate(row.original.start_date)
         return dateStr ? (
@@ -129,9 +134,13 @@ export function createColumns(
         )
       },
       enableSorting: false,
+      enableColumnFilter: false,
     },
     {
       id: "actions",
+      enableSorting: false,
+      enableColumnFilter: false,
+      enableHiding: false,
       header: () => <span className="sr-only">Actions</span>,
       cell: ({ row }) => (
         <div className="flex justify-end gap-1">

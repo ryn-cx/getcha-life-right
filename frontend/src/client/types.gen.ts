@@ -130,6 +130,7 @@ export type TaskUpdate = {
     repeat_weeks?: number;
     repeat_months?: number;
     repeat_years?: number;
+    completed?: (boolean | null);
 };
 
 export type Token = {
