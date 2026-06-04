@@ -161,7 +161,10 @@ export function DataTable<TData extends { id: string }, TValue>({
                 const column = header.column
 
                 return (
-                  <TableHead key={header.id} className="align-top">
+                  <TableHead
+                    key={header.id}
+                    className="align-top whitespace-normal"
+                  >
                     {header.isPlaceholder ? null : (
                       <div className={TABLE_HEADER_CELL_CLASS}>
                         <button
@@ -216,7 +219,10 @@ export function DataTable<TData extends { id: string }, TValue>({
                 style={rowStyle?.(row.original)}
               >
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
+                  <TableCell
+                    key={cell.id}
+                    className="align-top whitespace-normal wrap-break-word"
+                  >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}

@@ -336,14 +336,24 @@ function FilterSidebar({
 
 type ViewMode = "table" | "calendar"
 
+// Stable empty array for the header's column-toggle table instance, which only
+// needs the column defs — never the row data.
+const EMPTY_ROWS: TaskPublic[] = []
+
 function TasksContent({
   filters,
   viewMode,
   colorizeRows,
+  columnVisibility,
+  onColumnVisibilityChange,
 }: {
   filters: TaskFilters
   viewMode: ViewMode
   colorizeRows: boolean
+  columnVisibility: VisibilityState
+  onColumnVisibilityChange: (
+    updater: VisibilityState | ((previous: VisibilityState) => VisibilityState),
+  ) => void
 }) {
   const { data: tasks } = useSuspenseQuery(getTasksQueryOptions())
   const { data: categories } = useQuery({
@@ -375,17 +385,6 @@ function TasksContent({
     }
   }, [colorizeRows, categoryMap])
 
-  const [columnVisibility, setColumnVisibility] =
-    usePersistedJsonState<VisibilityState>("tasks-column-visibility", {})
-
-  const table = useReactTable({
-    data: filteredData,
-    columns,
-    state: { columnVisibility },
-    onColumnVisibilityChange: setColumnVisibility,
-    getCoreRowModel: getCoreRowModel(),
-  })
-
   if (tasks.data.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-12">
@@ -416,19 +415,14 @@ function TasksContent({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
-        <ColumnVisibilityButton table={table} />
-      </div>
-      <DataTable
-        columns={columns}
-        data={filteredData}
-        rowStyle={rowStyle}
-        storageKey="tasks"
-        columnVisibility={columnVisibility}
-        onColumnVisibilityChange={setColumnVisibility}
-      />
-    </div>
+    <DataTable
+      columns={columns}
+      data={filteredData}
+      rowStyle={rowStyle}
+      storageKey="tasks"
+      columnVisibility={columnVisibility}
+      onColumnVisibilityChange={onColumnVisibilityChange}
+    />
   )
 }
 
@@ -436,10 +430,16 @@ function TasksContentSuspense({
   filters,
   viewMode,
   colorizeRows,
+  columnVisibility,
+  onColumnVisibilityChange,
 }: {
   filters: TaskFilters
   viewMode: ViewMode
   colorizeRows: boolean
+  columnVisibility: VisibilityState
+  onColumnVisibilityChange: (
+    updater: VisibilityState | ((previous: VisibilityState) => VisibilityState),
+  ) => void
 }) {
   return (
     <Suspense fallback={<PendingTasks />}>
@@ -447,6 +447,8 @@ function TasksContentSuspense({
         filters={filters}
         viewMode={viewMode}
         colorizeRows={colorizeRows}
+        columnVisibility={columnVisibility}
+        onColumnVisibilityChange={onColumnVisibilityChange}
       />
     </Suspense>
   )
@@ -456,6 +458,29 @@ function Tasks() {
   const [filters, setFilters] = useState<TaskFilters>(defaultFilters)
   const [viewMode, setViewMode] = useState<ViewMode>("table")
   const [colorizeRows, setColorizeRows] = useState(false)
+  const [columnVisibility, setColumnVisibility] =
+    usePersistedJsonState<VisibilityState>("tasks-column-visibility", {})
+
+  const { data: categories } = useQuery({
+    queryFn: () => CategoriesService.readCategories(),
+    queryKey: ["categories"],
+  })
+
+  const columns = useMemo(
+    () => createColumns(categories?.data ?? []),
+    [categories?.data],
+  )
+
+  // Lightweight table instance powering the Columns toggle in the header. It
+  // shares the persisted columnVisibility state with the live DataTable, so it
+  // only needs the column defs, not the row data.
+  const columnsTable = useReactTable({
+    data: EMPTY_ROWS,
+    columns,
+    state: { columnVisibility },
+    onColumnVisibilityChange: setColumnVisibility,
+    getCoreRowModel: getCoreRowModel(),
+  })
 
   return (
     <div className="flex flex-col gap-6">
@@ -500,6 +525,9 @@ function Tasks() {
               <CalendarDays className="size-4" />
             </Button>
           </ButtonGroup>
+          {viewMode === "table" && (
+            <ColumnVisibilityButton table={columnsTable} />
+          )}
           <AddTask />
         </div>
       </PageHeader>
@@ -517,6 +545,8 @@ function Tasks() {
             filters={filters}
             viewMode={viewMode}
             colorizeRows={colorizeRows}
+            columnVisibility={columnVisibility}
+            onColumnVisibilityChange={setColumnVisibility}
           />
         </div>
       </div>
