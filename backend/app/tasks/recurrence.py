@@ -71,18 +71,42 @@ def set_task_dates(task: Task) -> None:
     now = datetime.now(timezone.utc)
     is_on_completion = task.repeat_type == RepeatType.ON_COMPLETION
 
+    if is_on_completion:
+        gap = (
+            task.due_date - task.start_date
+            if task.start_date is not None and task.due_date is not None
+            else None
+        )
+
+        if task.start_date is not None:
+            task.start_date, task.repeat_original_start_day = _increment_date(
+                task,
+                now,
+                task.repeat_original_start_day,
+            )
+
+        if task.due_date is not None:
+            if gap is not None:
+                task.due_date = task.start_date + gap
+            else:
+                task.due_date, task.repeat_original_due_day = _increment_date(
+                    task,
+                    now,
+                    task.repeat_original_due_day,
+                )
+        return
+
+    # ON_DUE_DATE: advance each date from its own previous value.
     if task.due_date is not None:
-        due_anchor = now if is_on_completion else task.due_date
         task.due_date, task.repeat_original_due_day = _increment_date(
             task,
-            due_anchor,
+            task.due_date,
             task.repeat_original_due_day,
         )
 
     if task.start_date is not None:
-        start_anchor = now if is_on_completion else task.start_date
         task.start_date, task.repeat_original_start_day = _increment_date(
             task,
-            start_anchor,
+            task.start_date,
             task.repeat_original_start_day,
         )

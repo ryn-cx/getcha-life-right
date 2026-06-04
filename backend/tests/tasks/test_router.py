@@ -494,11 +494,14 @@ def test_complete_task_repeat_on_completion(
     content = response.json()
     assert content["completed"] is False
     now = datetime.now(timezone.utc)
-    expected = now + timedelta(days=1)
-    new_due = datetime.fromisoformat(content["due_date"])
-    assert abs((new_due - expected).total_seconds()) < 1
+    expected_start = now + timedelta(days=1)
     new_start = datetime.fromisoformat(content["start_date"])
-    assert abs((new_start - expected).total_seconds()) < 1
+    assert abs((new_start - expected_start).total_seconds()) < 1
+    # due_date advances by the same amount as start_date, preserving the
+    # original 3-day gap between start_date (2025-12-29) and due_date (2026-01-01).
+    expected_due = expected_start + timedelta(days=3)
+    new_due = datetime.fromisoformat(content["due_date"])
+    assert abs((new_due - expected_due).total_seconds()) < 1
 
     completion_response = client.get(
         f"{settings.API_V1_STR}/tasks/{task_id}/completions",
