@@ -1,6 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Circle, CircleCheck, Pencil, Trash2 } from "lucide-react"
+import {
+  Archive,
+  ArchiveRestore,
+  CircleCheck,
+  Pencil,
+  Trash2,
+} from "lucide-react"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -208,9 +214,7 @@ const EditTask = ({
         requestBody: { completed: !task.completed },
       }),
     onSuccess: () => {
-      showSuccessToast(
-        task.completed ? "Task marked active" : "Task marked completed",
-      )
+      showSuccessToast(task.completed ? "Task unarchived" : "Task archived")
     },
     onError: handleError.bind(showErrorToast),
     onSettled: () => {
@@ -507,11 +511,13 @@ const EditTask = ({
                   onClick={() => toggleStatusMutation.mutate()}
                   disabled={anyPending}
                   title={
-                    task.completed ? "Mark as active" : "Mark as completed"
+                    task.completed
+                      ? "Unarchive task"
+                      : "Archive task when it's no longer active"
                   }
                 >
-                  {task.completed ? <Circle /> : <CircleCheck />}
-                  {task.completed ? "Mark active" : "Mark completed"}
+                  {task.completed ? <ArchiveRestore /> : <Archive />}
+                  {task.completed ? "Unarchive" : "Archive"}
                 </Button>
               </div>
               <div className="flex gap-2">

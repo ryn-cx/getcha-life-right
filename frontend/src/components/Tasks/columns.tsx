@@ -190,7 +190,7 @@ export function createColumns(
       header: () => <span className="sr-only">Actions</span>,
       cell: ({ row }) => (
         <div className="flex justify-end gap-1">
-          <CompleteTask task={row.original} />
+          {!row.original.completed && <CompleteTask task={row.original} />}
           <EditTask task={row.original} />
           <DeleteTask id={row.original.id} />
         </div>
