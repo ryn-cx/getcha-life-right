@@ -11,8 +11,8 @@ import { Suspense, useMemo, useState } from "react"
 import { CategoriesService, type TaskPublic, TasksService } from "@/client"
 import { ColumnVisibilityButton } from "@/components/Common/ColumnVisibilityButton"
 import { DataTable } from "@/components/Common/DataTable"
+import { DataTableSkeleton } from "@/components/Common/DataTableSkeleton"
 import { PageHeader } from "@/components/Common/PageHeader"
-import PendingTasks from "@/components/Pending/PendingTasks"
 import AddTask from "@/components/Tasks/AddTask"
 import { CalendarView } from "@/components/Tasks/CalendarView"
 import { createColumns } from "@/components/Tasks/columns"
@@ -432,6 +432,7 @@ function TasksContentSuspense({
   colorizeRows,
   columnVisibility,
   onColumnVisibilityChange,
+  skeletonTable,
 }: {
   filters: TaskFilters
   viewMode: ViewMode
@@ -440,9 +441,10 @@ function TasksContentSuspense({
   onColumnVisibilityChange: (
     updater: VisibilityState | ((previous: VisibilityState) => VisibilityState),
   ) => void
+  skeletonTable: ReturnType<typeof useReactTable<TaskPublic>>
 }) {
   return (
-    <Suspense fallback={<PendingTasks />}>
+    <Suspense fallback={<DataTableSkeleton table={skeletonTable} />}>
       <TasksContent
         filters={filters}
         viewMode={viewMode}
@@ -547,6 +549,7 @@ function Tasks() {
             colorizeRows={colorizeRows}
             columnVisibility={columnVisibility}
             onColumnVisibilityChange={setColumnVisibility}
+            skeletonTable={columnsTable}
           />
         </div>
       </div>

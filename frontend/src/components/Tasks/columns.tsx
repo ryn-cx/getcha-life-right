@@ -108,6 +108,20 @@ export function createColumns(
       enableSorting: false,
     },
     {
+      accessorKey: "start_date",
+      header: "Start Date",
+      filterFn: dateRangeFilterFn,
+      meta: { filterVariant: "date-range" },
+      cell: ({ row }) => {
+        const dateStr = formatDate(row.original.start_date)
+        return dateStr ? (
+          <span className="text-sm">{dateStr}</span>
+        ) : (
+          <span className="text-muted-foreground italic text-sm">None</span>
+        )
+      },
+    },
+    {
       accessorKey: "due_date",
       header: "Due Date",
       filterFn: dateRangeFilterFn,
@@ -132,20 +146,6 @@ export function createColumns(
           >
             {dateStr}
           </span>
-        )
-      },
-    },
-    {
-      accessorKey: "start_date",
-      header: "Start Date",
-      filterFn: dateRangeFilterFn,
-      meta: { filterVariant: "date-range" },
-      cell: ({ row }) => {
-        const dateStr = formatDate(row.original.start_date)
-        return dateStr ? (
-          <span className="text-sm">{dateStr}</span>
-        ) : (
-          <span className="text-muted-foreground italic text-sm">None</span>
         )
       },
     },
