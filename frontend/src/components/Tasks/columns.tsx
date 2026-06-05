@@ -1,6 +1,11 @@
 import type { ColumnDef } from "@tanstack/react-table"
 
 import type { CategoryPublic, TaskPublic } from "@/client"
+import {
+  dateRangeFilterFn,
+  NONE_VALUE,
+  optionFilterFn,
+} from "@/components/Common/DataTable"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import CompleteTask from "./CompleteTask"
@@ -15,6 +20,16 @@ function formatDate(dateStr: string | null | undefined): string {
     day: "numeric",
     year: "numeric",
   })
+}
+
+type TaskStatus = "active" | "inactive" | "completed"
+
+function taskStatus(task: TaskPublic): TaskStatus {
+  if (task.completed) return "completed"
+  if (task.start_date && new Date(task.start_date) > new Date()) {
+    return "inactive"
+  }
+  return "active"
 }
 
 function formatRepeat(task: TaskPublic): string {
@@ -46,16 +61,38 @@ export function createColumns(
     {
       accessorKey: "completed",
       header: "Status",
-      enableColumnFilter: false,
-      cell: ({ row }) => (
-        <Badge variant={row.original.completed ? "secondary" : "default"}>
-          {row.original.completed ? "Done" : "Active"}
-        </Badge>
-      ),
+      filterFn: (row, _columnId, value) =>
+        !value || taskStatus(row.original) === value,
+      meta: {
+        filterVariant: "select",
+        filterOptions: [
+          { label: "Active", value: "active" },
+          { label: "Inactive", value: "inactive" },
+          { label: "Completed", value: "completed" },
+        ],
+      },
+      cell: ({ row }) => {
+        const status = taskStatus(row.original)
+        if (status === "completed") {
+          return <Badge variant="secondary">Completed</Badge>
+        }
+        if (status === "inactive") {
+          return <Badge variant="outline">Inactive</Badge>
+        }
+        return <Badge variant="default">Active</Badge>
+      },
     },
     {
       accessorKey: "category_id",
       header: "Category",
+      filterFn: optionFilterFn,
+      meta: {
+        filterVariant: "select",
+        filterOptions: [
+          { label: "None", value: NONE_VALUE },
+          ...categories.map((c) => ({ label: c.title, value: c.id })),
+        ],
+      },
       cell: ({ row }) => {
         const name = row.original.category_id
           ? categoryMap.get(row.original.category_id)
@@ -69,12 +106,12 @@ export function createColumns(
         )
       },
       enableSorting: false,
-      enableColumnFilter: false,
     },
     {
       accessorKey: "due_date",
       header: "Due Date",
-      enableColumnFilter: false,
+      filterFn: dateRangeFilterFn,
+      meta: { filterVariant: "date-range" },
       cell: ({ row }) => {
         const dateStr = formatDate(row.original.due_date)
         if (!dateStr) {
@@ -101,7 +138,8 @@ export function createColumns(
     {
       accessorKey: "start_date",
       header: "Start Date",
-      enableColumnFilter: false,
+      filterFn: dateRangeFilterFn,
+      meta: { filterVariant: "date-range" },
       cell: ({ row }) => {
         const dateStr = formatDate(row.original.start_date)
         return dateStr ? (
@@ -114,6 +152,15 @@ export function createColumns(
     {
       accessorKey: "repeat_type",
       header: "Repeat",
+      filterFn: optionFilterFn,
+      meta: {
+        filterVariant: "select",
+        filterOptions: [
+          { label: "None", value: NONE_VALUE },
+          { label: "Due date", value: "on_due_date" },
+          { label: "Completion", value: "on_completion" },
+        ],
+      },
       cell: ({ row }) => {
         const task = row.original
         if (!task.repeat_type || task.repeat_type === "none") {
@@ -134,7 +181,6 @@ export function createColumns(
         )
       },
       enableSorting: false,
-      enableColumnFilter: false,
     },
     {
       id: "actions",

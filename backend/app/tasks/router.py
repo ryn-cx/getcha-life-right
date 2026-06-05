@@ -1,8 +1,9 @@
 import uuid
 from collections.abc import Sequence
 from datetime import datetime
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 from sqlmodel import col, func, select
 
 from app.auth.dependencies import CurrentUser, SessionDep
@@ -64,8 +65,8 @@ def _validate_category_ownership(
 def read_tasks(
     session: SessionDep,
     current_user: CurrentUser,
-    skip: int = 0,
-    limit: int = 100,
+    skip: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1)] = 100_000,
 ) -> TasksPublic:
     """
     Retrieve tasks.
@@ -92,8 +93,8 @@ def read_tasks(
 def read_all_completions(
     session: SessionDep,
     current_user: CurrentUser,
-    skip: int = 0,
-    limit: int = 100,
+    skip: Annotated[int, Query(ge=0)] = 0,
+    limit: Annotated[int, Query(ge=1)] = 100_000,
 ) -> TaskCompletionsPublic:
     """
     Retrieve all task completions for the current user.

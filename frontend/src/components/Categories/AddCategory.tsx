@@ -6,20 +6,11 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 
 import { CategoriesService, type CategoryCreate } from "@/client"
+import { FormModal } from "@/components/Common/FormModal"
 import { Button } from "@/components/ui/button"
 import { ColorInput } from "@/components/ui/color-input"
+import { DialogTrigger } from "@/components/ui/dialog"
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import {
-  Form,
   FormControl,
   FormField,
   FormItem,
@@ -27,24 +18,25 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { LoadingButton } from "@/components/ui/loading-button"
 import useCustomToast from "@/hooks/useCustomToast"
+import { optionalString } from "@/lib/formSchemas"
 import { handleError } from "@/utils"
 
 const formSchema = z.object({
   title: z.string().min(1, { message: "Title is required" }),
-  description: z.string().optional(),
+  description: optionalString,
   color: z.string().nullable().optional(),
 })
 
-type FormData = z.infer<typeof formSchema>
+type FormInput = z.input<typeof formSchema>
+type FormOutput = z.output<typeof formSchema>
 
 const AddCategory = () => {
   const [isOpen, setIsOpen] = useState(false)
   const queryClient = useQueryClient()
   const { showSuccessToast, showErrorToast } = useCustomToast()
 
-  const form = useForm<FormData>({
+  const form = useForm<FormInput, unknown, FormOutput>({
     resolver: zodResolver(formSchema),
     mode: "onBlur",
     criteriaMode: "all",
@@ -69,95 +61,78 @@ const AddCategory = () => {
     },
   })
 
-  const onSubmit = (data: FormData) => {
+  const onSubmit = (data: FormOutput) => {
     mutation.mutate(data)
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button className="my-4">
-          <Plus className="mr-2" />
-          Add Category
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Add Category</DialogTitle>
-          <DialogDescription>
-            Fill in the details to add a new category.
-          </DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <div className="grid gap-4 py-4">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      Title <span className="text-destructive">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Title"
-                        type="text"
-                        {...field}
-                        required
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+    <FormModal
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      trigger={
+        <DialogTrigger asChild>
+          <Button className="my-4">
+            <Plus className="mr-2" />
+            Add Category
+          </Button>
+        </DialogTrigger>
+      }
+      title="Add Category"
+      description="Fill in the details to add a new category."
+      form={form}
+      onSubmit={onSubmit}
+      isPending={mutation.isPending}
+      size="md"
+    >
+      <FormField
+        control={form.control}
+        name="title"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>
+              Title <span className="text-destructive">*</span>
+            </FormLabel>
+            <FormControl>
+              <Input placeholder="Title" type="text" {...field} required />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Description" type="text" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+      <FormField
+        control={form.control}
+        name="description"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Description</FormLabel>
+            <FormControl>
+              <Input
+                placeholder="Description"
+                type="text"
+                {...field}
+                value={field.value ?? ""}
               />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
-              <FormField
-                control={form.control}
-                name="color"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Color</FormLabel>
-                    <FormControl>
-                      <ColorInput
-                        value={field.value}
-                        onChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline" disabled={mutation.isPending}>
-                  Cancel
-                </Button>
-              </DialogClose>
-              <LoadingButton type="submit" loading={mutation.isPending}>
-                Save
-              </LoadingButton>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+      <FormField
+        control={form.control}
+        name="color"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Color</FormLabel>
+            <FormControl>
+              <ColorInput value={field.value} onChange={field.onChange} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </FormModal>
   )
 }
 

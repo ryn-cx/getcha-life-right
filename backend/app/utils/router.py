@@ -1,7 +1,7 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
 from pydantic.networks import EmailStr
 
-from app.auth.dependencies import CurrentUser
+from app.auth.dependencies import get_current_active_superuser
 from app.schemas import Message
 from app.utils import service as email_service
 
@@ -10,9 +10,10 @@ router = APIRouter(prefix="/utils", tags=["utils"])
 
 @router.post(
     "/test-email/",
+    dependencies=[Depends(get_current_active_superuser)],
     status_code=status.HTTP_201_CREATED,
 )
-def test_email(email_to: EmailStr, current_user: CurrentUser) -> Message:  # noqa: ARG001
+def test_email(email_to: EmailStr) -> Message:
     """
     Test emails.
     """

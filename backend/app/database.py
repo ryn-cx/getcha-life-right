@@ -1,9 +1,12 @@
 from importlib import import_module
 
-from sqlmodel import Session, create_engine
+from sqlmodel import Session, create_engine, select
 
 from app.config import settings
 from app.constants import APP_PATH
+from app.users import service as user_service
+from app.users.models import User
+from app.users.schemas import UserCreate
 
 engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
 
@@ -19,5 +22,15 @@ def automatically_import_models() -> None:
 automatically_import_models()
 
 
-def init_db(_session: Session) -> None:
-    pass
+def init_db(session: Session) -> None:
+    # Tables should be created with Alembic migrations.
+    user = session.exec(
+        select(User).where(User.email == settings.FIRST_SUPERUSER),
+    ).first()
+    if not user:
+        user_in = UserCreate(
+            email=settings.FIRST_SUPERUSER,
+            password=settings.FIRST_SUPERUSER_PASSWORD,
+            is_superuser=True,
+        )
+        user_service.create_user(session=session, user_create=user_in)

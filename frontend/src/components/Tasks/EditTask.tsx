@@ -209,7 +209,7 @@ const EditTask = ({
       }),
     onSuccess: () => {
       showSuccessToast(
-        task.completed ? "Task marked active" : "Task marked done",
+        task.completed ? "Task marked active" : "Task marked completed",
       )
     },
     onError: handleError.bind(showErrorToast),
@@ -506,10 +506,12 @@ const EditTask = ({
                   variant="outline"
                   onClick={() => toggleStatusMutation.mutate()}
                   disabled={anyPending}
-                  title={task.completed ? "Mark as active" : "Mark as done"}
+                  title={
+                    task.completed ? "Mark as active" : "Mark as completed"
+                  }
                 >
                   {task.completed ? <Circle /> : <CircleCheck />}
-                  {task.completed ? "Mark active" : "Mark done"}
+                  {task.completed ? "Mark active" : "Mark completed"}
                 </Button>
               </div>
               <div className="flex gap-2">

@@ -2,6 +2,7 @@ import {
   type Column,
   type ColumnDef,
   type ColumnFiltersState,
+  type FilterFn,
   flexRender,
   getCoreRowModel,
   getFacetedMinMaxValues,
@@ -54,9 +55,41 @@ import {
 declare module "@tanstack/react-table" {
   // allows us to define custom properties for our columns
   interface ColumnMeta<TData extends RowData, TValue> {
-    filterVariant?: "text" | "range" | "select"
+    filterVariant?: "text" | "range" | "select" | "date-range"
+    // Explicit options for a "select" filter, used when the raw cell value
+    // is not human-readable (booleans, UUIDs, enums) so faceted values won't do.
+    filterOptions?: { label: string; value: string }[]
   }
 }
+
+// Sentinel value for selecting rows with an empty/"none" cell value.
+export const NONE_VALUE = "__none__"
+const NONE_RAW_VALUES = new Set<unknown>([null, undefined, "", "none"])
+
+// Equality filter for "select" columns. Compares the raw cell value against the
+// chosen option's value as strings, with a sentinel for empty/"none" cells.
+export const optionFilterFn: FilterFn<any> = (row, columnId, value) => {
+  if (value == null || value === "") return true
+  const raw = row.getValue(columnId)
+  if (value === NONE_VALUE) return NONE_RAW_VALUES.has(raw)
+  return String(raw) === String(value)
+}
+optionFilterFn.autoRemove = (value) => value == null || value === ""
+
+// Inclusive [from, to] date filter. Bounds are yyyy-mm-dd strings from native
+// date inputs; rows with no date are excluded once a bound is set.
+export const dateRangeFilterFn: FilterFn<any> = (row, columnId, value) => {
+  const [from, to] = (value as [string, string]) ?? ["", ""]
+  if (!from && !to) return true
+  const raw = row.getValue(columnId)
+  if (!raw) return false
+  const time = new Date(raw as string).getTime()
+  if (from && time < new Date(from).getTime()) return false
+  if (to && time > new Date(`${to}T23:59:59.999`).getTime()) return false
+  return true
+}
+dateRangeFilterFn.autoRemove = (value) =>
+  !value || (!(value as [string, string])[0] && !(value as [string, string])[1])
 
 function usePersistentState<T>(key: string | undefined, initialValue: T) {
   const [value, setValue] = useState<T>(() => {
@@ -413,20 +446,54 @@ function Filter<TData, TValue>({ column }: { column: Column<TData, TValue> }) {
     )
   }
 
+  if (filterVariant === "date-range") {
+    const [from, to] = (columnFilterValue as [string, string]) ?? ["", ""]
+    const setRange = (next: [string, string]) =>
+      column.setFilterValue(next[0] || next[1] ? next : undefined)
+    return (
+      <div className="flex flex-col gap-1">
+        <DebouncedInput
+          type="date"
+          value={from}
+          debounce={0}
+          onChange={(value) => setRange([String(value), to])}
+          aria-label="From date"
+          className={cn(TABLE_FILTER_INPUT_CLASS, "w-36")}
+        />
+        <DebouncedInput
+          type="date"
+          value={to}
+          debounce={0}
+          onChange={(value) => setRange([from, String(value)])}
+          aria-label="To date"
+          className={cn(TABLE_FILTER_INPUT_CLASS, "w-36")}
+        />
+      </div>
+    )
+  }
+
   if (filterVariant === "select") {
+    const filterOptions = column.columnDef.meta?.filterOptions
     return (
       <select
         onChange={(e) => column.setFilterValue(e.target.value)}
-        value={columnFilterValue?.toString()}
+        value={columnFilterValue?.toString() ?? ""}
         className={cn(TABLE_FILTER_INPUT_CLASS, "rounded border px-1")}
       >
         <option value="">All</option>
-        {sortedUniqueValues.map((value) => (
-          // dynamically generated select options from faceted values feature
-          <option value={value} key={value}>
-            {value}
-          </option>
-        ))}
+        {filterOptions
+          ? // explicit, human-readable options for non-displayable raw values
+            filterOptions.map((option) => (
+              <option value={option.value} key={option.value}>
+                {option.label}
+              </option>
+            ))
+          : sortedUniqueValues.map((value) => (
+              // dynamically generated select options from faceted values feature
+              <option value={value} key={value}>
+                {value}
+              </option>
+            ))}
       </select>
     )
   }

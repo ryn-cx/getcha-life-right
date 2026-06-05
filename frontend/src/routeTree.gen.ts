@@ -20,6 +20,7 @@ import { Route as LayoutTasksRouteImport } from './routes/_layout/tasks'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutCompletionsRouteImport } from './routes/_layout/completions'
 import { Route as LayoutCategoriesRouteImport } from './routes/_layout/categories'
+import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
 
 const WelcomeRoute = WelcomeRouteImport.update({
   id: '/welcome',
@@ -75,6 +76,11 @@ const LayoutCategoriesRoute = LayoutCategoriesRouteImport.update({
   path: '/categories',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutAdminRoute = LayoutAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => LayoutRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
@@ -83,6 +89,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/welcome': typeof WelcomeRoute
+  '/admin': typeof LayoutAdminRoute
   '/categories': typeof LayoutCategoriesRoute
   '/completions': typeof LayoutCompletionsRoute
   '/settings': typeof LayoutSettingsRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/welcome': typeof WelcomeRoute
+  '/admin': typeof LayoutAdminRoute
   '/categories': typeof LayoutCategoriesRoute
   '/completions': typeof LayoutCompletionsRoute
   '/settings': typeof LayoutSettingsRoute
@@ -108,6 +116,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/welcome': typeof WelcomeRoute
+  '/_layout/admin': typeof LayoutAdminRoute
   '/_layout/categories': typeof LayoutCategoriesRoute
   '/_layout/completions': typeof LayoutCompletionsRoute
   '/_layout/settings': typeof LayoutSettingsRoute
@@ -123,6 +132,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/welcome'
+    | '/admin'
     | '/categories'
     | '/completions'
     | '/settings'
@@ -134,6 +144,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/welcome'
+    | '/admin'
     | '/categories'
     | '/completions'
     | '/settings'
@@ -147,6 +158,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/welcome'
+    | '/_layout/admin'
     | '/_layout/categories'
     | '/_layout/completions'
     | '/_layout/settings'
@@ -242,10 +254,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutCategoriesRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/admin': {
+      id: '/_layout/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof LayoutAdminRouteImport
+      parentRoute: typeof LayoutRoute
+    }
   }
 }
 
 interface LayoutRouteChildren {
+  LayoutAdminRoute: typeof LayoutAdminRoute
   LayoutCategoriesRoute: typeof LayoutCategoriesRoute
   LayoutCompletionsRoute: typeof LayoutCompletionsRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
@@ -254,6 +274,7 @@ interface LayoutRouteChildren {
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
+  LayoutAdminRoute: LayoutAdminRoute,
   LayoutCategoriesRoute: LayoutCategoriesRoute,
   LayoutCompletionsRoute: LayoutCompletionsRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
