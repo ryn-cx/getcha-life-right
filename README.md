@@ -2,6 +2,8 @@
 
 Personal task and habit tracker. Live at **[getchaliferight.com](https://getchaliferight.com)**.
 
+![Getcha Life Right](./getcha-life-right.png)
+
 ## Features
 
 - **Tasks** with title, description, category, optional start date/time, and
